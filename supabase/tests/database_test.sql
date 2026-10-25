@@ -292,5 +292,44 @@ do $$ begin
   assert (select subject_id from public.documents where title = 'Doc 2') is null, 'document conservé sans matière';
 end $$;
 
+-- ---------------------------------------------------------------------------
+-- Moteur IA : quota de générations et statut
+-- ---------------------------------------------------------------------------
+do $$ begin
+  begin
+    perform public.consume_generation_quota('00000000-0000-0000-0000-00000000000a');
+    raise exception 'ÉCHEC : quota consommable par le client';
+  exception when insufficient_privilege then null;
+  end;
+end $$;
+
+-- Relancer un document en échec : permis ; le marquer prêt : refusé
+reset role;
+update public.documents set status = 'failed' where title = 'Doc 2';
+set role authenticated;
+update public.documents set status = 'uploaded' where title = 'Doc 2';
+do $$ begin
+  assert (select status from public.documents where title = 'Doc 2') = 'uploaded', 'relance autorisée';
+  begin
+    update public.documents set status = 'ready' where title = 'Doc 2';
+    raise exception 'ÉCHEC : statut ready accepté';
+  exception when insufficient_privilege then null;
+  end;
+end $$;
+
+reset role;
+set role service_role;
+do $$
+declare i int;
+begin
+  for i in 1..30 loop
+    assert public.consume_generation_quota('00000000-0000-0000-0000-00000000000b'), format('génération %s acceptée', i);
+  end loop;
+  assert not public.consume_generation_quota('00000000-0000-0000-0000-00000000000b'), '31e génération refusée (plan gratuit)';
+  perform public.record_ai_usage('00000000-0000-0000-0000-00000000000b', 1500, 0.0123);
+  perform public.record_ai_usage('00000000-0000-0000-0000-00000000000b', 500, 0.0010);
+  assert (select tokens_used from public.usage_monthly where user_id = '00000000-0000-0000-0000-00000000000b') = 2000, 'tokens cumulés';
+end $$;
+
 reset role;
 \echo 'Tous les tests sont passés.'

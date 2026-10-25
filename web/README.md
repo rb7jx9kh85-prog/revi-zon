@@ -1,14 +1,21 @@
 # App web Revi-zon (Next.js + Supabase)
 
-Espace étudiant : connexion, profil, et bientôt import de cours et révisions.
+Espace étudiant : connexion, import de cours, révision avec flashcards, quiz, textes à trous, fiche et tuteur IA.
 
 ## Ce qui marche
 
-- **Connexion sans mot de passe** : lien magique par e-mail (le compte est créé à la première connexion).
-- **Connexion avec Google.**
-- **Pages protégées** : `/dashboard` redirige vers `/login` si on n'est pas connecté.
-- **Espace étudiant** : prénom, niveau d'études, plan, documents importés ce mois-ci.
-- **Déconnexion.**
+- **Connexion sans mot de passe** (lien magique par e-mail) et **avec Google**. Le compte est créé à la première connexion.
+- **Mes cours** (`/dashboard`) : liste des cours, quota du mois, profil (prénom, niveau d'études).
+- **Import** (`/dashboard/new`) : PDF, photo (JPG, PNG, WebP) ou texte collé.
+- **Préparation par l'IA** : la fonction `process-document` génère fiche, flashcards, textes à trous, quiz et questions suggérées. La page suit l'avancement et propose de réessayer en cas d'échec.
+- **Set de révision** (`/study/[id]`) :
+  - Vue d'ensemble : résumé, maîtrise, exercices à revoir.
+  - Flashcards : retourner (Espace), « À revoir » / « Je savais » (← / →).
+  - Quiz : 4 options, touches 1-4, correction et explication.
+  - Textes à trous : saisie dans la phrase, indice, correction tolérante (accents, majuscules).
+  - Fiche de révision en Markdown.
+  - Chat « Demande à Revi » à droite (tiroir sur mobile).
+- **Répétition espacée** : chaque réponse est notée (SM-2) et les exercices à revoir passent en premier.
 
 ## Lancer en local
 
@@ -23,7 +30,7 @@ npm run dev                  # http://localhost:3000
 
 ### 1. Supabase (dashboard du projet `czspzlnqmitrcyweknwm`)
 
-1. **Base de données** : appliquer les migrations de `supabase/migrations/` (voir `supabase/README.md`).
+1. **Base de données** : déjà installée (4 migrations, voir `supabase/README.md`).
 2. **Authentication > URL Configuration**
    - Site URL : l'adresse de l'app sur Vercel, par ex. `https://app-revi-zon.vercel.app`
    - Redirect URLs : ajouter
@@ -37,7 +44,17 @@ npm run dev                  # http://localhost:3000
      Dans Google, « Authorized redirect URI » = `https://czspzlnqmitrcyweknwm.supabase.co/auth/v1/callback`.
 4. **Project Settings > API** : copier l'URL du projet et la clé publique (`publishable` ou `anon`).
 
-### 2. Vercel
+### 2. Clé OpenAI (obligatoire pour l'IA)
+
+Supabase > Edge Functions > Secrets, ajouter :
+
+- `OPENAI_API_KEY` = ta clé OpenAI (platform.openai.com > API keys)
+- optionnel : `OPENAI_MODEL` (par défaut `gpt-4.1-mini`), `OPENAI_CHAT_MODEL`,
+  `OPENAI_PRICE_INPUT_PER_M` / `OPENAI_PRICE_OUTPUT_PER_M` (prix par million de tokens, pour le suivi des coûts)
+
+Pas besoin de redéployer : les fonctions lisent les secrets à chaque appel.
+
+### 3. Vercel
 
 Créer un **nouveau projet** depuis le repo `revi-zon` (la landing garde son propre projet) :
 

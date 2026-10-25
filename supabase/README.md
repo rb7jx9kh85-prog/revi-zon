@@ -11,6 +11,19 @@ Projet Supabase : `czspzlnqmitrcyweknwm`
 | `migrations/20261025120000_core_schema.sql` | Tables, types, contraintes, index, quotas, répétition espacée |
 | `migrations/20261025120100_row_level_security.sql` | Droits d'accès : chaque étudiant ne voit que ses données |
 | `migrations/20261025120200_storage.sql` | Bucket privé `documents` et ses règles |
+| `migrations/20261025140000_ai_pipeline.sql` | Génération IA : type `study_set`, colonnes du document (fichier OpenAI, résumé, questions suggérées), quota de générations, suivi des coûts, relance d'un document en échec |
+
+Les 4 migrations sont appliquées sur le projet.
+
+## Edge Functions (`functions/`)
+
+| Fonction | Rôle |
+|---|---|
+| `process-document` | `POST { document_id }`. Vérifie l'utilisateur et le quota, puis en arrière-plan envoie le cours à OpenAI (PDF via l'API Files, image en base64, texte brut) et enregistre fiche, exercices validés, coût et statut. |
+| `chat` | `POST { document_id, messages }`. Tuteur « Revi » qui répond à partir de la fiche et du cours. |
+
+Les deux sont déployées avec `verify_jwt = false` et vérifient elles-mêmes le jeton de l'utilisateur
+(compatible avec les nouvelles clés publishable / secret). Secret requis : `OPENAI_API_KEY`.
 
 ## Modèle de données
 
