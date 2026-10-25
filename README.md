@@ -8,6 +8,7 @@ Application de révision propulsée par l'IA : l'étudiant importe ses cours (PD
   - `landing/index.html` : la page. Le bloc `CONFIG` en haut du script règle le nombre d'étudiants, les avis, les liens des boutons et le bandeau d'établissements.
   - `landing/assets/` : logo (symbole, favicon, fichier d'origine).
 - `web/` : app web Next.js (connexion, espace étudiant). Voir `web/README.md`.
+- `supabase/` : base de données (migrations SQL, tests). Voir `supabase/README.md`.
 
 ## Lancer la landing en local
 
