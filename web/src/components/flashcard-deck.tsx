@@ -69,12 +69,12 @@ export function FlashcardDeck({ cards }: { cards: StudyItem<FlashcardContent>[] 
           aria-pressed={flipped}
         >
           <div key={card.id} className={`fc-inner ${flipped ? "flipped" : ""}`}>
-            <div className="fc-face front">
+            <div className="fc-face fc-front">
               <span className="fc-kicker">Question</span>
               <span className="fc-text">{card.content.front}</span>
               <span className="fc-hint">Touche la carte ou appuie sur Espace</span>
             </div>
-            <div className="fc-face back">
+            <div className="fc-face fc-back">
               <span className="fc-kicker">Réponse</span>
               <span className="fc-text">{card.content.back}</span>
             </div>
