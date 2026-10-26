@@ -5,6 +5,19 @@ import { useEffect, useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import type { DocumentStatus } from "@/lib/types";
 
+async function readError(error: unknown): Promise<string> {
+  const context = (error as { context?: Response })?.context;
+  if (context && typeof context.json === "function") {
+    try {
+      const body = await context.json();
+      if (body?.error) return String(body.error);
+    } catch {
+      // réponse non JSON
+    }
+  }
+  return "Le traitement n'a pas pu démarrer. Réessaie dans un instant.";
+}
+
 const STEPS = ["Lecture du cours", "Repérage des notions clés", "Création des flashcards et du quiz", "Rédaction de la fiche"];
 
 // Lance (si besoin) puis suit la préparation d'un cours.
@@ -15,16 +28,18 @@ export function ProcessingStatus({ documentId, status, error }: { documentId: st
   const [startError, setStartError] = useState<string | null>(null);
   const started = useRef(false);
 
+  const [attempt, setAttempt] = useState(0);
+
   useEffect(() => {
     if (status !== "uploaded" || started.current) return;
     started.current = true;
     createClient()
       .functions.invoke("process-document", { body: { document_id: documentId } })
-      .then(({ error: fnError }) => {
-        if (fnError) setStartError("Le traitement n'a pas pu démarrer. Réessaie dans un instant.");
+      .then(async ({ error: fnError }) => {
+        if (fnError) setStartError(await readError(fnError));
         router.refresh();
       });
-  }, [documentId, router, status]);
+  }, [attempt, documentId, router, status]);
 
   useEffect(() => {
     if (status !== "processing" && status !== "uploaded") return;
@@ -80,7 +95,22 @@ export function ProcessingStatus({ documentId, status, error }: { documentId: st
         ))}
       </ol>
       <p className="muted">Ça prend en général moins d'une minute. Tu peux rester sur cette page.</p>
-      {startError && <p className="notice error">{startError}</p>}
+      {startError && (
+        <>
+          <p className="notice error">{startError}</p>
+          <button
+            type="button"
+            className="btn btn-primary btn-inline"
+            onClick={() => {
+              setStartError(null);
+              started.current = false;
+              setAttempt((n) => n + 1);
+            }}
+          >
+            Réessayer
+          </button>
+        </>
+      )}
     </div>
   );
 }
