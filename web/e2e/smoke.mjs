@@ -85,8 +85,14 @@ try {
       async () => log("écran de préparation", true, (await page.locator("main h2").first().innerText())),
       () => log("écran de préparation", false),
     );
-    await page.waitForTimeout(8000);
-    log("état après 8 s", true, (await page.locator(".study-main").innerText()).slice(0, 200).replace(/\s+/g, " "));
+    // L'IA prend en général 20 à 90 s
+    await page.waitForSelector("text=/maîtrisé|préparation a échoué/", { timeout: 240000 }).then(
+      async () => {
+        const failed = (await page.locator("text=préparation a échoué").count()) > 0;
+        log("génération par l'IA", !failed, (await page.locator(".study-main").innerText()).slice(0, 200).replace(/\s+/g, " "));
+      },
+      () => log("génération par l'IA", false, "pas terminée après 4 min"),
+    );
     console.log("STUDY_ID=" + (page.url().match(/study\/([0-9a-f-]{36})/) || [])[1]);
   } else {
     const id = process.env.STUDY_ID;
@@ -130,10 +136,30 @@ try {
 
     await page.goto(BASE + "/pricing", { waitUntil: "networkidle" });
     await page.click('button:has-text("Passer à Pro")');
-    await page.waitForURL(/checkout\.stripe\.com/, { timeout: 15000 }).then(
-      () => log("paiement Stripe", true, "redirection vers Stripe"),
-      async () => log("paiement Stripe", false, (await page.locator(".notice.error").allInnerTexts()).join(" | ")),
+    const onStripe = await page.waitForURL(/checkout\.stripe\.com/, { timeout: 20000 }).then(
+      () => (log("redirection Stripe", true), true),
+      async () => (log("redirection Stripe", false, (await page.locator(".notice.error").allInnerTexts()).join(" | ")), false),
     );
+    if (onStripe && process.env.PAY === "1") {
+      // Carte de test Stripe
+      await page.waitForSelector("#cardNumber", { timeout: 30000 });
+      await page.fill("#cardNumber", "4242424242424242");
+      await page.fill("#cardExpiry", "12 / 34");
+      await page.fill("#cardCvc", "123");
+      if (await page.locator("#billingName").count()) await page.fill("#billingName", "Testeur E2E");
+      if (await page.locator("#billingPostalCode").isVisible().catch(() => false)) await page.fill("#billingPostalCode", "1000");
+      const optOut = page.locator("#enableStripePass");
+      if (await optOut.isChecked().catch(() => false)) await optOut.uncheck().catch(() => {});
+      await page.click(".SubmitButton, button[type=submit]");
+      await page.waitForURL(/\/billing\/success/, { timeout: 90000 }).then(
+        () => log("paiement test accepté", true, page.url().split("?")[0]),
+        async () => log("paiement test accepté", false, page.url() + " " + (await page.locator("[role=alert], .FieldError").allInnerTexts()).join(" | ")),
+      );
+      await page.waitForSelector("text=/Tu es Pro|Tes nouvelles limites/", { timeout: 60000 }).then(
+        async () => log("passage en Pro", true, (await page.locator("main").innerText()).slice(0, 160).replace(/\s+/g, " ")),
+        async () => log("passage en Pro", false, (await page.locator("main").innerText()).slice(0, 200).replace(/\s+/g, " ")),
+      );
+    }
 
     const mobile = await browser.newContext({ viewport: { width: 390, height: 844 }, isMobile: true });
     await mobile.addCookies(await sessionCookies());
