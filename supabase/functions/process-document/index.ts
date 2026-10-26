@@ -1,4 +1,4 @@
-// Revi-zon : transforme un cours importé en set de révision.
+// Revizuno : transforme un cours importé en set de révision.
 // Un seul appel OpenAI (sortie JSON structurée) produit la fiche, les flashcards,
 // les textes à trous, le quiz et les questions suggérées pour le chat.
 //

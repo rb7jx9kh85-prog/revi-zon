@@ -176,7 +176,7 @@ export function StudioChat({
         <div className="studio-side-head">
           <Link href="/dashboard" className="brand">
             <img src="/logo-mark.png" alt="" width={32} height={29} />
-            Revi-zon
+            Revizuno
           </Link>
           <button type="button" className="icon-btn studio-close" onClick={() => setSidebar(false)} aria-label="Fermer">
             ×

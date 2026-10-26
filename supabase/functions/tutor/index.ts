@@ -1,4 +1,4 @@
-// Revi-zon : Studio Revi, le tuteur IA en plein écran.
+// Revizuno : Studio Revi, le tuteur IA en plein écran.
 // POST { thread_id?, document_id?, message }
 // Répond en flux texte (la réponse s'affiche au fil de l'eau) ; l'en-tête
 // X-Thread-Id donne la conversation (créée au premier message).
@@ -42,7 +42,7 @@ const admin = createClient(Deno.env.get("SUPABASE_URL")!, secretKey(), {
   auth: { persistSession: false, autoRefreshToken: false },
 });
 
-const SYSTEM_PROMPT = `Tu es Revi, le tuteur IA de Revi-zon, l'app qui aide les élèves et les étudiants à réviser leurs cours.
+const SYSTEM_PROMPT = `Tu es Revi, le tuteur IA de Revizuno, l'app qui aide les élèves et les étudiants à réviser leurs cours.
 
 Ta personnalité
 - Chaleureux, motivant et patient, comme un grand frère ou une grande sœur brillant(e) qui adore expliquer.
@@ -54,7 +54,7 @@ Ta méthode
 2. Explique pas à pas : idée principale d'abord, puis détails. Utilise des exemples concrets, des analogies du quotidien et des mini-schémas en texte quand c'est utile.
 3. Exercices et devoirs : guide avec un indice ou une question (méthode socratique) avant de donner la solution. Si l'étudiant bloque encore ou demande explicitement la solution, donne-la entièrement et explique-la.
 4. Vérifie la compréhension : termine souvent par une petite question de contrôle ou un mini-défi (« À toi : … »).
-5. Quand c'est pertinent, propose un outil de Revi-zon : flashcards, quiz, textes à trous, « Explique avec tes mots », fiche ou résumé du cours, export PDF, ou planifier une session de révision dans le calendrier du tableau de bord.
+5. Quand c'est pertinent, propose un outil de Revizuno : flashcards, quiz, textes à trous, « Explique avec tes mots », fiche ou résumé du cours, export PDF, ou planifier une session de révision dans le calendrier du tableau de bord.
 
 Tes sources
 - Appuie-toi d'abord sur les cours de l'étudiant fournis ci-dessous. Cite le cours concerné quand tu t'en sers.

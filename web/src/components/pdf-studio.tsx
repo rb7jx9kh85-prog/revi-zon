@@ -31,7 +31,7 @@ function fileName(title: string) {
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-|-$/g, "")
     .slice(0, 60);
-  return `${slug || "cours"}-revi-zon.pdf`;
+  return `${slug || "cours"}-revizuno.pdf`;
 }
 
 export function PdfStudio({ documentId, data: initial }: { documentId: string; data: PdfData }) {

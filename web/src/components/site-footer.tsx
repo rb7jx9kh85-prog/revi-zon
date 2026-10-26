@@ -5,7 +5,7 @@ export function SiteFooter() {
   return (
     <footer className="site-footer">
       <span>
-        © {new Date().getFullYear()} Revi-zon · {LEGAL.operator}
+        © {new Date().getFullYear()} Revizuno · {LEGAL.operator}
       </span>
       <nav aria-label="Liens légaux">
         <Link href="/confidentialite">Confidentialité</Link>

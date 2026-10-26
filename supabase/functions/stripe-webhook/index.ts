@@ -1,4 +1,4 @@
-// Revi-zon : reçoit les événements Stripe et met à jour le plan de l'étudiant.
+// Revizuno : reçoit les événements Stripe et met à jour le plan de l'étudiant.
 // À déclarer dans Stripe > Developers > Webhooks avec les événements :
 // checkout.session.completed, customer.subscription.created,
 // customer.subscription.updated, customer.subscription.deleted

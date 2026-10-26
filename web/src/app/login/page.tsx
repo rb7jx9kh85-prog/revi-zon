@@ -22,7 +22,7 @@ export default async function LoginPage({
       <div className="stack" style={{ width: "min(100%, 420px)" }}>
         <a href="/" className="brand" style={{ justifySelf: "center" }}>
           <img src="/logo-mark.png" alt="" width={40} height={36} />
-          Revi-zon
+          Revizuno
         </a>
         <section className="card stack">
           <div className="stack" style={{ gap: 8 }}>

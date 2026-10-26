@@ -1,4 +1,4 @@
-// Revi-zon : outils de révision à la demande.
+// Revizuno : outils de révision à la demande.
 // POST { action: "explain", document_id, exercise_id, explanation }
 //   L'étudiant explique une notion avec ses mots ; Revi corrige et note.
 //   Répond { feedback: { score, verdict, strengths, missing, misconceptions, model_answer, tip } }.
@@ -154,7 +154,7 @@ Deno.serve(async (req) => {
     const text = await callOpenAI(
       {
         instructions:
-          "Tu es Revi, le tuteur bienveillant de Revi-zon. Un étudiant explique une notion de son cours avec ses propres mots " +
+          "Tu es Revi, le tuteur bienveillant de Revizuno. Un étudiant explique une notion de son cours avec ses propres mots " +
           "(technique Feynman). Évalue la justesse et la complétude de son explication par rapport au cours, pas son style ni son orthographe. " +
           "Sois honnête mais encourageant, tutoie l'étudiant, réponds en français et reste concret. " +
           "Note : 90-100 explication juste et complète, 70-89 juste avec des oublis mineurs, 40-69 partielle, 1-39 confuse ou fausse, 0 hors sujet. " +
@@ -192,7 +192,7 @@ Deno.serve(async (req) => {
     const summary = await callOpenAI(
       {
         instructions:
-          "Tu es Revi, le tuteur de Revi-zon. Rédige le résumé de révision du cours fourni, en français, en Markdown simple " +
+          "Tu es Revi, le tuteur de Revizuno. Rédige le résumé de révision du cours fourni, en français, en Markdown simple " +
           "(titres ##, listes à puces, **gras** pour les mots-clés, pas de tableau, pas d'emoji). Structure exacte :\n" +
           "## L'essentiel en un coup d'œil\n5 à 7 puces courtes, une idée par puce.\n" +
           "## Les notions clés\nUne puce par notion : **Terme** : définition en une phrase.\n" +

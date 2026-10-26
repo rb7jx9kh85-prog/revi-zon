@@ -210,7 +210,7 @@ function StudyPdf({ data, theme, sections, s }: { data: PdfData; theme: PdfTheme
       <View style={s.header} fixed>
         <View style={{ flexDirection: "row" }}>
           <View style={s.brandDot} />
-          <Text>Revi-zon</Text>
+          <Text>Revizuno</Text>
         </View>
         <Text>{clean(data.title).slice(0, 70)}</Text>
       </View>
@@ -223,7 +223,7 @@ function StudyPdf({ data, theme, sections, s }: { data: PdfData; theme: PdfTheme
   );
 
   return (
-    <Document title={data.title} author="Revi-zon" creator="Revi-zon" producer="Revi-zon">
+    <Document title={data.title} author="Revizuno" creator="Revizuno" producer="Revizuno">
       <Frame label={date}>
         <View style={s.coverWrap}>
           <View style={[s.blob, { width: 180, height: 180, backgroundColor: t.accents[1], top: -10, right: -40 }]} />
@@ -238,7 +238,7 @@ function StudyPdf({ data, theme, sections, s }: { data: PdfData; theme: PdfTheme
             {has("flashcards") && data.flashcards.length ? <Text style={s.pill}>{data.flashcards.length} flashcards</Text> : null}
             {has("quiz") && data.quiz.length ? <Text style={s.pill}>{data.quiz.length} questions de quiz</Text> : null}
             {has("cloze") && data.cloze.length ? <Text style={s.pill}>{data.cloze.length} textes à trous</Text> : null}
-            <Text style={[s.pill, { backgroundColor: t.accents[0], color: t.onAccent }]}>Généré par Revi-zon</Text>
+            <Text style={[s.pill, { backgroundColor: t.accents[0], color: t.onAccent }]}>Généré par Revizuno</Text>
           </View>
         </View>
       </Frame>

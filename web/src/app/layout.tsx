@@ -6,7 +6,7 @@ const display = Bricolage_Grotesque({ subsets: ["latin"], variable: "--f-display
 const body = Figtree({ subsets: ["latin"], variable: "--f-body" });
 
 export const metadata: Metadata = {
-  title: { default: "Revi-zon", template: "%s · Revi-zon" },
+  title: { default: "Revizuno", template: "%s · Revizuno" },
   description: "Importe tes cours, l'IA génère flashcards, textes à trous, quiz et fiches de révision à ton niveau.",
 };
 

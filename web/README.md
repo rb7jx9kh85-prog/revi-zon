@@ -1,4 +1,4 @@
-# App web Revi-zon (Next.js + Supabase)
+# App web Revizuno (Next.js + Supabase)
 
 Espace étudiant : connexion, import de cours, révision avec flashcards, quiz, textes à trous, fiche et tuteur IA.
 
@@ -58,7 +58,7 @@ Pas besoin de redéployer : les fonctions lisent les secrets à chaque appel.
 
 ### 3. Paiement Stripe
 
-1. Dans Stripe (mode test pour commencer) : **Product catalog > Add product** « Revi-zon Pro », prix récurrent mensuel (ex. 9.90 CHF). Copier l'identifiant du prix (`price_...`).
+1. Dans Stripe (mode test pour commencer) : **Product catalog > Add product** « Revizuno Pro », prix récurrent mensuel (ex. 9.90 CHF). Copier l'identifiant du prix (`price_...`).
 2. **Developers > API keys** : copier la clé secrète (`sk_test_...`).
 3. **Developers > Webhooks > Add endpoint** :
    - URL : `https://czspzlnqmitrcyweknwm.supabase.co/functions/v1/stripe-webhook`

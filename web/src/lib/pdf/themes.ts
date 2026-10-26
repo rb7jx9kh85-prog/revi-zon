@@ -18,7 +18,7 @@ export const PDF_THEMES: PdfTheme[] = [
   {
     id: "pop",
     label: "Pop",
-    description: "Les couleurs fluo de Revi-zon",
+    description: "Les couleurs fluo de Revizuno",
     page: "#fffdf6",
     ink: "#141b3d",
     muted: "#5a6283",

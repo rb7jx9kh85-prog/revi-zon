@@ -27,11 +27,11 @@ export function icsContent(e: CalendarEvent & { uid: string }) {
   return [
     "BEGIN:VCALENDAR",
     "VERSION:2.0",
-    "PRODID:-//Revi-zon//Sessions de revision//FR",
+    "PRODID:-//Revizuno//Sessions de revision//FR",
     "CALSCALE:GREGORIAN",
     "METHOD:PUBLISH",
     "BEGIN:VEVENT",
-    `UID:${e.uid}@revi-zon`,
+    `UID:${e.uid}@revizuno`,
     `DTSTAMP:${stamp(new Date())}`,
     `DTSTART:${stamp(e.start)}`,
     `DTEND:${stamp(end)}`,
@@ -55,7 +55,7 @@ export function downloadIcs(e: CalendarEvent & { uid: string }) {
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
-  a.download = "session-revi-zon.ics";
+  a.download = "session-revizuno.ics";
   document.body.appendChild(a);
   a.click();
   a.remove();

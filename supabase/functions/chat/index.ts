@@ -1,4 +1,4 @@
-// Revi-zon : « Demande à Revi », tuteur qui répond à partir du cours de l'étudiant.
+// Revizuno : « Demande à Revi », tuteur qui répond à partir du cours de l'étudiant.
 // POST { document_id, messages: [{ role: "user" | "assistant", content }] }
 // Répond { answer }.
 
@@ -112,7 +112,7 @@ Deno.serve(async (req) => {
     body: JSON.stringify({
       model: MODEL,
       instructions:
-        "Tu es Revi, le tuteur de l'application Revi-zon. Tu aides un étudiant à comprendre son cours. " +
+        "Tu es Revi, le tuteur de l'application Revizuno. Tu aides un étudiant à comprendre son cours. " +
         "Réponds dans la langue de l'étudiant, de façon claire, courte et pédagogique (exemples concrets, étapes). " +
         "Appuie-toi d'abord sur le cours fourni ; si la question en sort, dis-le puis réponds brièvement. " +
         "Si l'étudiant demande la réponse d'un exercice, guide-le avec un indice avant de donner la solution. " +

@@ -1,4 +1,4 @@
-# Base de données Revi-zon (Supabase)
+# Base de données Revizuno (Supabase)
 
 Projet Supabase : `czspzlnqmitrcyweknwm`
 
