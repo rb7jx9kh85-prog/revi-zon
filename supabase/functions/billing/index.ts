@@ -3,7 +3,7 @@
 // Répond { url } : page de paiement Stripe, ou portail pour gérer / résilier l'abonnement.
 
 import { createClient } from "npm:@supabase/supabase-js@2";
-import Stripe from "npm:stripe@17";
+import Stripe from "npm:stripe@19";
 
 const STRIPE_SECRET_KEY = Deno.env.get("STRIPE_SECRET_KEY") ?? "";
 const STRIPE_PRICE_ID = Deno.env.get("STRIPE_PRICE_ID") ?? "";

@@ -149,7 +149,7 @@ try {
       if (await page.locator("#billingName").count()) await page.fill("#billingName", "Testeur E2E");
       if (await page.locator("#billingPostalCode").isVisible().catch(() => false)) await page.fill("#billingPostalCode", "1000");
       const optOut = page.locator("#enableStripePass");
-      if (await optOut.isChecked().catch(() => false)) await optOut.uncheck();
+      if (await optOut.isChecked().catch(() => false)) await optOut.uncheck().catch(() => {});
       await page.click(".SubmitButton, button[type=submit]");
       await page.waitForURL(/\/billing\/success/, { timeout: 90000 }).then(
         () => log("paiement test accepté", true, page.url().split("?")[0]),

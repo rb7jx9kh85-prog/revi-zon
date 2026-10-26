@@ -4,7 +4,7 @@
 // customer.subscription.updated, customer.subscription.deleted
 
 import { createClient } from "npm:@supabase/supabase-js@2";
-import Stripe from "npm:stripe@17";
+import Stripe from "npm:stripe@19";
 
 // Créé à la demande : sans clé, la fonction doit quand même démarrer
 let stripeClient: Stripe | null = null;
