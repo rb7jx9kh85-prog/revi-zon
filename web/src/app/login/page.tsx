@@ -1,3 +1,4 @@
+import { SiteFooter } from "@/components/site-footer";
 import type { Metadata } from "next";
 import { safeNextPath } from "@/lib/redirect";
 import { LoginForm } from "./login-form";
@@ -34,6 +35,7 @@ export default async function LoginPage({
           <LoginForm next={safeNextPath(next)} />
         </section>
       </div>
+      <SiteFooter />
     </main>
   );
 }
