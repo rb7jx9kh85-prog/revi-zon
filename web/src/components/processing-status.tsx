@@ -74,7 +74,7 @@ export function ProcessingStatus({ documentId, status, error }: { documentId: st
         <button type="button" className="btn btn-primary btn-inline" onClick={retry} disabled={retrying}>
           {retrying ? "Relance…" : "Réessayer"}
         </button>
-        {startError && <p className="notice error">{startError}</p>}
+        {startError && startError !== error && <p className="notice error">{startError}</p>}
       </div>
     );
   }
