@@ -114,6 +114,11 @@ try {
     await page.goto(base + "/flashcards", { waitUntil: "networkidle" });
     const before = await page.locator(".session-label").innerText();
     await page.click(".fc");
+    await page.waitForTimeout(900);
+    const cardBox = await page.locator(".fc").boundingBox();
+    const backBox = await page.locator(".fc-face.fc-back").boundingBox();
+    const sameSize = cardBox && backBox && Math.abs(cardBox.width - backBox.width) < 4 && Math.abs(cardBox.x - backBox.x) < 4;
+    log("carte retournée centrée", Boolean(sameSize), `carte ${Math.round(cardBox?.width ?? 0)}px, réponse ${Math.round(backBox?.width ?? 0)}px`);
     await page.click('button:has-text("Je savais")');
     const after = await page.locator(".session-label, .done h2").first().innerText();
     log("flashcards", before !== after, `${before} -> ${after}`);
