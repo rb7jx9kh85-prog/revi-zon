@@ -52,8 +52,8 @@ try {
   await p0.goto(BASE + "/dashboard");
   log("dashboard protégé", p0.url().includes("/login"), p0.url());
   await p0.goto(BASE + "/");
-  const cta = await p0.locator('a[href="/dashboard/new"]').first().getAttribute("href");
-  log("bouton landing vers l'app", cta === "/dashboard/new", cta);
+  const cta = await p0.locator('a[href="/dashboard"]').first().getAttribute("href");
+  log("bouton landing vers l'app", cta === "/dashboard", cta);
 
   const ctx = await browser.newContext({ viewport: { width: 1280, height: 900 } });
   await ctx.addCookies(await sessionCookies());
@@ -134,6 +134,60 @@ try {
       () => log("chat", false),
     );
 
+    // Explique avec tes mots
+    await page.goto(base + "/explain", { waitUntil: "networkidle" });
+    await page.fill("#explain-input", "C'est le processus par lequel les plantes utilisent la lumière pour fabriquer du sucre à partir de CO2 et d'eau, en rejetant de l'oxygène.");
+    await page.click('button:has-text("Envoyer à Revi")');
+    await page.waitForSelector(".score-ring", { timeout: 60000 }).then(
+      async () => log("explique avec tes mots", true, `${await page.locator(".score-ring").innerText()}/100 · ${(await page.locator(".fb-verdict").innerText()).slice(0, 100)}`),
+      async () => log("explique avec tes mots", false, (await page.locator(".notice.error").allInnerTexts()).join(" | ")),
+    );
+
+    // Résumé
+    await page.goto(base + "/summary", { waitUntil: "networkidle" });
+    await page.waitForSelector(".summary-md h3", { timeout: 90000 }).then(
+      async () => log("résumé", true, (await page.locator(".summary-md h3").allInnerTexts()).join(" / ").slice(0, 160)),
+      async () => log("résumé", false, (await page.locator(".notice.error").allInnerTexts()).join(" | ")),
+    );
+
+    // Export PDF
+    await page.goto(base + "/pdf", { waitUntil: "networkidle" });
+    await page.click('.theme-card:has-text("Pastel")');
+    const download = page.waitForEvent("download", { timeout: 90000 }).catch(() => null);
+    await page.click('button:has-text("Générer et télécharger")');
+    const file = await download;
+    if (file) {
+      const path = await file.path();
+      const { statSync, readFileSync } = await import("node:fs");
+      const size = path ? statSync(path).size : 0;
+      const head = path ? readFileSync(path).subarray(0, 5).toString() : "";
+      log("export PDF", head === "%PDF-" && size > 5000, `${file.suggestedFilename()} · ${Math.round(size / 1024)} Ko`);
+    } else log("export PDF", false, (await page.locator(".notice.error").allInnerTexts()).join(" | "));
+
+    // Studio Revi (réponse en flux)
+    await page.goto(BASE + "/studio", { waitUntil: "networkidle" });
+    await page.fill("#studio-input", "Explique-moi la photosynthèse en 2 phrases.");
+    await page.keyboard.press("Enter");
+    await page.waitForFunction(() => {
+      const bots = document.querySelectorAll(".bot-row .bubble.bot .md");
+      return bots.length > 0 && (bots[bots.length - 1].textContent ?? "").length > 40 && document.querySelector(".copy-btn");
+    }, null, { timeout: 60000 }).then(
+      async () => log("studio revi", true, (await page.locator(".bot-row .md").last().innerText()).slice(0, 140).replace(/\s+/g, " ")),
+      async () => log("studio revi", false, (await page.locator(".notice.error").allInnerTexts()).join(" | ")),
+    );
+    log("studio conversation enregistrée", (await page.locator(".thread").count()) > 0, page.url());
+
+    // Tableau de bord : planifier une session
+    await page.goto(BASE + "/dashboard", { waitUntil: "networkidle" });
+    await page.waitForSelector(".cal-day", { timeout: 15000 });
+    log("calendrier", (await page.locator(".cal-day").count()) === 42, `${await page.locator(".kpi .stat").first().innerText()} jour(s) de série`);
+    await page.click('button:has-text("Planifier une session")');
+    await page.click('form.plan-form button[type="submit"]');
+    await page.waitForSelector(".session-item a:has-text('Google Agenda')", { timeout: 15000 }).then(
+      async () => log("session planifiée + lien agenda", true, ((await page.locator(".session-item a:has-text('Google Agenda')").first().getAttribute("href")) ?? "").slice(0, 80)),
+      async () => log("session planifiée + lien agenda", false, (await page.locator(".plan-form .notice").allInnerTexts()).join(" | ")),
+    );
+
     await page.goto(BASE + "/pricing", { waitUntil: "networkidle" });
     await page.click('button:has-text("Passer à Pro")');
     const onStripe = await page.waitForURL(/checkout\.stripe\.com/, { timeout: 20000 }).then(
@@ -155,16 +209,16 @@ try {
         () => log("paiement test accepté", true, page.url().split("?")[0]),
         async () => log("paiement test accepté", false, page.url() + " " + (await page.locator("[role=alert], .FieldError").allInnerTexts()).join(" | ")),
       );
-      await page.waitForSelector("text=/Tu es Pro|Tes nouvelles limites/", { timeout: 60000 }).then(
-        async () => log("passage en Pro", true, (await page.locator("main").innerText()).slice(0, 160).replace(/\s+/g, " ")),
-        async () => log("passage en Pro", false, (await page.locator("main").innerText()).slice(0, 200).replace(/\s+/g, " ")),
+      await page.waitForURL(/\/dashboard/, { timeout: 60000 }).then(
+        async () => log("passage en Pro puis tableau de bord", true, page.url()),
+        async () => log("passage en Pro puis tableau de bord", false, (await page.locator("main").innerText()).slice(0, 200).replace(/\s+/g, " ")),
       );
     }
 
     const mobile = await browser.newContext({ viewport: { width: 390, height: 844 }, isMobile: true });
     await mobile.addCookies(await sessionCookies());
     const m = await mobile.newPage();
-    for (const path of ["/", "/dashboard", `/study/${id}/quiz`, "/pricing"]) {
+    for (const path of ["/", "/dashboard", `/study/${id}/quiz`, `/study/${id}/pdf`, "/studio", "/pricing"]) {
       await m.goto(BASE + path, { waitUntil: "networkidle" });
       await noHorizontalScroll(m, path);
     }

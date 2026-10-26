@@ -8,7 +8,10 @@ const ITEMS = [
   { slug: "flashcards", label: "Flashcards", color: "var(--accent)", icon: "M4 7h12v12H4zM8 4h12v12" },
   { slug: "quiz", label: "Quiz", color: "var(--accent-4)", icon: "M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18zm-2.5 6.5a2.5 2.5 0 1 1 3.5 2.3c-.6.3-1 .9-1 1.6v.6M12 17h.01" },
   { slug: "blanks", label: "Textes à trous", color: "var(--accent-2)", icon: "M3 8h5m8 0h5M3 13h3m9 0h6M3 18h9M8 8h8M6 13h9M12 18h6" },
+  { slug: "explain", label: "Explique avec tes mots", color: "var(--accent-5)", icon: "M4 5h16v11H9l-5 4zM8 9h8M8 12h5" },
+  { slug: "summary", label: "Résumé", color: "var(--accent)", icon: "M13 3 5 14h6l-1 7 8-11h-6z" },
   { slug: "notes", label: "Fiche de révision", color: "var(--accent-3)", icon: "M6 3h9l4 4v14H6zM14 3v5h5M9 12h7M9 16h5" },
+  { slug: "pdf", label: "Export PDF", color: "var(--accent-2)", icon: "M6 3h9l4 4v14H6zM12 10v7M9 14l3 3 3-3" },
 ];
 
 export function StudyNav({ documentId, counts }: { documentId: string; counts: Record<string, number | null> }) {

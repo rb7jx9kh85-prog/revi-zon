@@ -30,7 +30,10 @@ export default async function StudyOverview({ params }: { params: Promise<{ id: 
     { href: "flashcards", label: "Flashcards", count: counts.flashcard, unit: "cartes", color: "var(--accent)" },
     { href: "quiz", label: "Quiz", count: counts.quiz, unit: "questions", color: "var(--accent-4)" },
     { href: "blanks", label: "Textes à trous", count: counts.cloze, unit: "phrases", color: "var(--accent-2)" },
-    { href: "notes", label: "Fiche de révision", count: null, unit: "", color: "var(--accent-3)" },
+    { href: "explain", label: "Explique avec tes mots", count: null, unit: "", color: "var(--accent-5)", hint: "Revi corrige ton explication" },
+    { href: "summary", label: "Résumé", count: null, unit: "", color: "var(--accent)", hint: "L'essentiel + check-list d'examen" },
+    { href: "notes", label: "Fiche de révision", count: null, unit: "", color: "var(--accent-3)", hint: "L'essentiel sur une page" },
+    { href: "pdf", label: "Export PDF", count: null, unit: "", color: "var(--accent-2)", hint: "Un joli PDF à télécharger" },
   ];
 
   return (
@@ -42,7 +45,7 @@ export default async function StudyOverview({ params }: { params: Promise<{ id: 
         </section>
       ) : null}
 
-      <section className="grid-3">
+      <section className="grid-3 stagger">
         <div className="card stat-card">
           <span className="stat">{mastery}%</span>
           <span className="muted">maîtrisé</span>
@@ -60,12 +63,12 @@ export default async function StudyOverview({ params }: { params: Promise<{ id: 
         </div>
       </section>
 
-      <section className="method-grid">
+      <section className="method-grid stagger">
         {methods.map((m) => (
           <Link key={m.href} href={`/study/${id}/${m.href}`} className="method-card">
             <span className="method-swatch" style={{ background: m.color }} />
             <strong>{m.label}</strong>
-            <span className="muted">{m.count != null ? `${m.count} ${m.unit}` : "L'essentiel sur une page"}</span>
+            <span className="muted">{m.count != null ? `${m.count} ${m.unit}` : m.hint}</span>
           </Link>
         ))}
       </section>

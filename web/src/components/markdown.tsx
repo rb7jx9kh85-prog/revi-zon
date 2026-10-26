@@ -21,12 +21,12 @@ function inline(text: string, keyPrefix: string): ReactNode[] {
   return nodes;
 }
 
-type Block =
+export type Block =
   | { type: "h"; level: 1 | 2 | 3; text: string }
   | { type: "ul" | "ol"; items: string[] }
   | { type: "p"; text: string };
 
-function parse(source: string): Block[] {
+export function parseMarkdown(source: string): Block[] {
   const blocks: Block[] = [];
   let paragraph: string[] = [];
   const flush = () => {
@@ -63,7 +63,7 @@ function parse(source: string): Block[] {
 export function Markdown({ source, className }: { source: string; className?: string }) {
   return (
     <div className={`md ${className ?? ""}`}>
-      {parse(source).map((block, i) => {
+      {parseMarkdown(source).map((block, i) => {
         const key = `b${i}`;
         if (block.type === "h") {
           const Tag = block.level === 1 ? "h2" : block.level === 2 ? "h3" : "h4";

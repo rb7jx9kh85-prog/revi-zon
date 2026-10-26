@@ -1,3 +1,8 @@
+"use client";
+
+import { useEffect } from "react";
+import { burstConfetti } from "@/lib/confetti";
+
 export function SessionProgress({ label, current, total, topic }: { label: string; current: number; total: number; topic?: string }) {
   const pct = total ? Math.round((Math.min(current, total) / total) * 100) : 0;
   return (
@@ -24,8 +29,11 @@ export function SessionDone({
   detail: string;
   onRestart: () => void;
 }) {
+  useEffect(() => {
+    burstConfetti();
+  }, []);
   return (
-    <div className="card stack done" style={{ textAlign: "center", justifyItems: "center" }}>
+    <div className="card stack done pop-in" style={{ textAlign: "center", justifyItems: "center" }}>
       <h2 style={{ fontSize: "1.8rem" }}>{title}</h2>
       <p className="muted">{detail}</p>
       <button type="button" className="btn btn-primary btn-inline" onClick={onRestart}>

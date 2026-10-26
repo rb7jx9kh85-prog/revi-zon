@@ -60,22 +60,26 @@ export function FlashcardDeck({ cards }: { cards: StudyItem<FlashcardContent>[] 
       <SessionProgress label="Carte" current={index} total={cards.length} topic={card.content.topic} />
 
       <div className="fc-stage">
-        <button
-          type="button"
-          className={`fc ${flipped ? "flipped" : ""}`}
+        <div
+          role="button"
+          tabIndex={0}
+          className="fc"
           onClick={() => setFlipped((f) => !f)}
           aria-label={flipped ? "Voir la question" : "Voir la réponse"}
+          aria-pressed={flipped}
         >
-          <span className="fc-face">
-            <span className="fc-kicker">Question</span>
-            <span className="fc-text">{card.content.front}</span>
-            <span className="fc-hint">Touche la carte ou appuie sur Espace</span>
-          </span>
-          <span className="fc-face back">
-            <span className="fc-kicker">Réponse</span>
-            <span className="fc-text">{card.content.back}</span>
-          </span>
-        </button>
+          <div key={card.id} className={`fc-inner ${flipped ? "flipped" : ""}`}>
+            <div className="fc-face front">
+              <span className="fc-kicker">Question</span>
+              <span className="fc-text">{card.content.front}</span>
+              <span className="fc-hint">Touche la carte ou appuie sur Espace</span>
+            </div>
+            <div className="fc-face back">
+              <span className="fc-kicker">Réponse</span>
+              <span className="fc-text">{card.content.back}</span>
+            </div>
+          </div>
+        </div>
       </div>
 
       <div className="row-center">
