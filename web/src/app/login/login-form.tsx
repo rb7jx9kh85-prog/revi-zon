@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
-import { supabaseKey, supabaseUrl } from "@/lib/supabase/env";
 
 type Status = { kind: "idle" } | { kind: "sending" } | { kind: "sent"; email: string } | { kind: "error"; message: string };
 
@@ -18,18 +17,6 @@ function readableError(message: string) {
   return "La connexion a échoué. Réessaie dans un instant.";
 }
 
-// Google activé dans Supabase ? Sinon Supabase affiche une page d'erreur brute.
-async function googleEnabled() {
-  try {
-    const res = await fetch(`${supabaseUrl}/auth/v1/settings`, { headers: { apikey: supabaseKey } });
-    if (!res.ok) return true;
-    const settings = await res.json();
-    return settings?.external?.google !== false;
-  } catch {
-    return true;
-  }
-}
-
 export function LoginForm({ next }: { next: string }) {
   const [email, setEmail] = useState("");
   const [status, setStatus] = useState<Status>({ kind: "idle" });
@@ -43,20 +30,6 @@ export function LoginForm({ next }: { next: string }) {
       options: { emailRedirectTo: callbackUrl(next), shouldCreateUser: true },
     });
     setStatus(error ? { kind: "error", message: readableError(error.message) } : { kind: "sent", email: email.trim() });
-  }
-
-  async function signInWithGoogle() {
-    setStatus({ kind: "sending" });
-    if (!(await googleEnabled())) {
-      setStatus({ kind: "error", message: "La connexion avec Google n'est pas encore disponible. Utilise ton adresse e-mail en attendant." });
-      return;
-    }
-    const supabase = createClient();
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider: "google",
-      options: { redirectTo: callbackUrl(next) },
-    });
-    if (error) setStatus({ kind: "error", message: readableError(error.message) });
   }
 
   if (status.kind === "sent") {
@@ -76,7 +49,8 @@ export function LoginForm({ next }: { next: string }) {
 
   return (
     <div className="stack">
-      <button type="button" className="btn btn-ghost" onClick={signInWithGoogle} disabled={busy}>
+      {/* Connexion Google désactivée pour l'instant */}
+      <button type="button" className="btn btn-ghost btn-soon" disabled aria-disabled="true">
         <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true">
           <path fill="#4285F4" d="M23.5 12.3c0-.8-.1-1.6-.2-2.3H12v4.4h6.5a5.6 5.6 0 0 1-2.4 3.6v3h3.9c2.3-2.1 3.5-5.2 3.5-8.7z" />
           <path fill="#34A853" d="M12 24c3.2 0 6-1.1 7.9-2.9l-3.9-3c-1.1.7-2.4 1.2-4 1.2-3.1 0-5.7-2.1-6.7-4.9h-4v3.1A12 12 0 0 0 12 24z" />
@@ -84,6 +58,7 @@ export function LoginForm({ next }: { next: string }) {
           <path fill="#EA4335" d="M12 4.8c1.7 0 3.3.6 4.6 1.8l3.4-3.4A12 12 0 0 0 1.3 6.6l4 3.1C6.3 6.9 8.9 4.8 12 4.8z" />
         </svg>
         Continuer avec Google
+        <span className="soon-pill">Arrive bientôt</span>
       </button>
 
       <div className="divider">ou par e-mail</div>
