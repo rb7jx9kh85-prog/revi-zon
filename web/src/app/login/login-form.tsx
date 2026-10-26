@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { supabaseKey, supabaseUrl } from "@/lib/supabase/env";
 
 type Status = { kind: "idle" } | { kind: "sending" } | { kind: "sent"; email: string } | { kind: "error"; message: string };
 
@@ -15,6 +16,18 @@ function readableError(message: string) {
   if (/rate limit|too many/i.test(message)) return "Trop de demandes. Attends une minute avant de réessayer.";
   if (/invalid.*email/i.test(message)) return "Cette adresse e-mail n'est pas valide.";
   return "La connexion a échoué. Réessaie dans un instant.";
+}
+
+// Google activé dans Supabase ? Sinon Supabase affiche une page d'erreur brute.
+async function googleEnabled() {
+  try {
+    const res = await fetch(`${supabaseUrl}/auth/v1/settings`, { headers: { apikey: supabaseKey } });
+    if (!res.ok) return true;
+    const settings = await res.json();
+    return settings?.external?.google !== false;
+  } catch {
+    return true;
+  }
 }
 
 export function LoginForm({ next }: { next: string }) {
@@ -34,6 +47,10 @@ export function LoginForm({ next }: { next: string }) {
 
   async function signInWithGoogle() {
     setStatus({ kind: "sending" });
+    if (!(await googleEnabled())) {
+      setStatus({ kind: "error", message: "La connexion avec Google n'est pas encore disponible. Utilise ton adresse e-mail en attendant." });
+      return;
+    }
     const supabase = createClient();
     const { error } = await supabase.auth.signInWithOAuth({
       provider: "google",
