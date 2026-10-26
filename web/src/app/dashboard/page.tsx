@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { BillingButton } from "@/components/billing-button";
 import { PlannerBoard } from "@/components/dashboard/planner-board";
 import { WelcomePro } from "@/components/dashboard/welcome-pro";
+import { SiteFooter } from "@/components/site-footer";
 import { createClient } from "@/lib/supabase/server";
 import type { StudyDocument, StudySession } from "@/lib/types";
 import { ProfileForm } from "./profile-form";
@@ -273,6 +274,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
         <p className="muted">Ton niveau aide Revi à adapter la difficulté des exercices et ses explications.</p>
         <ProfileForm displayName={profile?.display_name ?? ""} schoolLevel={profile?.school_level ?? ""} />
       </section>
+      <SiteFooter />
     </main>
   );
 }

@@ -11,8 +11,13 @@ function callbackUrl(next: string) {
   return url.toString();
 }
 
-function readableError(message: string) {
-  if (/rate limit|too many/i.test(message)) return "Trop de demandes. Attends une minute avant de réessayer.";
+function readableError(message: string, code?: string) {
+  // Limite d'envoi d'e-mails du projet (service e-mail de Supabase)
+  if (code === "over_email_send_rate_limit" || /email rate limit/i.test(message))
+    return "Trop de liens de connexion envoyés en ce moment. Réessaie dans quelques minutes.";
+  // Délai entre deux liens pour une même adresse
+  if (/only request this after|over_request_rate_limit|rate limit|too many/i.test(`${code ?? ""} ${message}`))
+    return "Un lien vient déjà d'être envoyé. Vérifie ta boîte mail (et les spams) ou réessaie dans une minute.";
   if (/invalid.*email/i.test(message)) return "Cette adresse e-mail n'est pas valide.";
   return "La connexion a échoué. Réessaie dans un instant.";
 }
@@ -29,7 +34,7 @@ export function LoginForm({ next }: { next: string }) {
       email: email.trim(),
       options: { emailRedirectTo: callbackUrl(next), shouldCreateUser: true },
     });
-    setStatus(error ? { kind: "error", message: readableError(error.message) } : { kind: "sent", email: email.trim() });
+    setStatus(error ? { kind: "error", message: readableError(error.message, error.code) } : { kind: "sent", email: email.trim() });
   }
 
   if (status.kind === "sent") {

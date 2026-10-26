@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { BillingButton } from "@/components/billing-button";
 import { PRO_PRICE_LABEL, PRO_PRICE_PERIOD } from "@/lib/pricing";
+import { SiteFooter } from "@/components/site-footer";
 import { createClient } from "@/lib/supabase/server";
 
 export const metadata: Metadata = { title: "Offre Pro" };
@@ -112,6 +113,7 @@ export default async function PricingPage({ searchParams }: { searchParams: Prom
           <p className="muted small">Paiement sécurisé par Stripe. Carte, Apple Pay ou Google Pay.</p>
         </article>
       </section>
+      <SiteFooter />
     </main>
   );
 }
