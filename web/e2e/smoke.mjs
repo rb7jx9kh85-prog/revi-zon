@@ -62,7 +62,7 @@ try {
   await p0.goto(BASE + "/dashboard");
   log("dashboard protégé", p0.url().includes("/login"), p0.url());
   await p0.goto(BASE + "/");
-  const cta = await p0.locator('a[href="/dashboard"]').first().getAttribute("href");
+  const cta = await p0.locator('a[href="/dashboard"]').first().getAttribute("href", { timeout: 5000 }).catch(() => null);
   log("bouton landing vers l'app", cta === "/dashboard", cta);
 
   const ctx = await browser.newContext({ viewport: { width: 1280, height: 900 } });
