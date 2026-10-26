@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { BillingButton } from "@/components/billing-button";
 import { createClient } from "@/lib/supabase/server";
 import type { StudyDocument } from "@/lib/types";
 import { ProfileForm } from "./profile-form";
@@ -68,7 +69,9 @@ export default async function DashboardPage() {
             + Nouveau cours
           </Link>
         ) : (
-          <span className="notice">Limite de {limit} cours atteinte ce mois-ci</span>
+          <Link href="/pricing" className="notice">
+            Limite de {limit} cours atteinte ce mois-ci · <strong>Passer à Pro</strong>
+          </Link>
         )}
       </section>
 
@@ -110,6 +113,13 @@ export default async function DashboardPage() {
           <div className="meter" aria-hidden="true">
             <span style={{ width: `${limit ? Math.min(100, (used / limit) * 100) : 0}%` }} />
           </div>
+          {plan === "pro" ? (
+            <BillingButton action="portal" label="Gérer mon abonnement" className="btn btn-ghost" />
+          ) : (
+            <Link href="/pricing" className="btn btn-primary">
+              Passer à Pro
+            </Link>
+          )}
         </section>
 
         <section className="card stack">

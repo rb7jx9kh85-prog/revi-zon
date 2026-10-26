@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Revi-zon</title>
 <meta name="claude:viewport-fit-sides" content="cover">
-<link rel="icon" type="image/png" href="assets/favicon.png">
+<link rel="icon" type="image/png" href="/landing/assets/favicon.png">
 <meta name="description" content="Étudie plus vite, obtiens de meilleures notes. Importe tes cours : l'IA génère flashcards, textes à trous, quiz et fiches de révision à ton niveau.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -567,12 +567,14 @@ footer a:hover{color:var(--fg)}
 
 <header class="nav">
   <div class="wrap">
-    <a class="logo" href="#top" aria-label="Revi-zon, accueil"><img class="logo-mark" src="assets/logo-mark.png" alt="" width="44" height="39"><span class="brand">Revi-zon</span></a>
+    <a class="logo" href="#top" aria-label="Revi-zon, accueil"><img class="logo-mark" src="/landing/assets/logo-mark.png" alt="" width="44" height="39"><span class="brand">Revi-zon</span></a>
     <nav class="nav-links" aria-label="Navigation principale">
       <a href="#difference">Pourquoi <span class="brand">Revi-zon</span></a>
       <a href="#fonctionnalites">Fonctionnalités</a>
       <a href="#avis">Avis</a>
       <a href="#faq">FAQ</a>
+      <a data-link="pricing" href="/pricing">Offre Pro</a>
+      <a data-link="login" href="/login">Connexion</a>
     </nav>
     <a class="btn btn-primary" data-link="web" href="#commencer">Essayer gratuitement</a>
   </div>
@@ -591,9 +593,8 @@ footer a:hover{color:var(--fg)}
             Commencer sur le web
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
           </a>
-          <a class="btn btn-ghost" data-link="app" href="#partout">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><rect x="6" y="2" width="12" height="20" rx="3"/><path d="M10.5 18.5h3" stroke-linecap="round"/></svg>
-            Télécharger l'app
+          <a class="btn btn-ghost" href="#fonctionnalites">
+            Voir les fonctionnalités
           </a>
         </div>
         <div class="proof">
@@ -842,7 +843,7 @@ footer a:hover{color:var(--fg)}
   <section id="partout">
     <div class="wrap">
       <div class="sec-head center">
-        <span class="eyebrow">Web, iOS &amp; Android</span>
+        <span class="eyebrow">Ordinateur, tablette, téléphone</span>
         <h2>Accède à <span class="brand">Revi-zon</span> <span class="o">n'importe quand, n'importe où.</span></h2>
         <p>Révise où que tu sois, sur tous tes appareils, grâce à une plateforme qui s'adapte à chaque écran.</p>
       </div>
@@ -868,10 +869,10 @@ footer a:hover{color:var(--fg)}
         <div class="ben rv-up"><span class="ben-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></span><div><h3>Sessions courtes</h3><p>10 minutes suffisent pour avancer, même entre deux cours.</p></div></div>
         <div class="ben cta-card rv-up">
           <h3>Prêt à t'y mettre&nbsp;?</h3>
-          <p>Sur le web tout de suite, ou dans l'app.</p>
+          <p>Gratuit pour commencer, sans carte bancaire, rien à installer.</p>
           <div class="btns">
-            <a class="btn dark" data-link="web" href="#commencer">Ouvrir sur le web</a>
-            <a class="btn light" data-link="app" href="#partout">Télécharger l'app</a>
+            <a class="btn dark" data-link="web" href="#commencer">Créer mon compte</a>
+            <a class="btn light" data-link="pricing" href="/pricing">Découvrir l'offre Pro</a>
           </div>
         </div>
       </div>
@@ -884,11 +885,12 @@ footer a:hover{color:var(--fg)}
     <div class="wrap">
       <div class="sec-head center"><span class="eyebrow">FAQ</span><h2>Questions fréquentes</h2></div>
       <div class="faq">
-        <details open><summary>Quels fichiers puis-je importer&nbsp;?</summary><p>PDF, Word, PowerPoint, photos de cours ou de tableau, et texte copié-collé.</p></details>
+        <details open><summary>Quels fichiers puis-je importer&nbsp;?</summary><p>PDF, photos de cours ou de tableau (JPG, PNG) et texte copié-collé.</p></details>
         <details><summary>Ça marche pour toutes les matières&nbsp;?</summary><p>Oui&nbsp;: sciences, droit, langues, histoire, médecine… L'IA travaille à partir de ton propre cours.</p></details>
         <details><summary>Les exercices sont-ils vraiment adaptés à mon niveau&nbsp;?</summary><p>Oui. Plus tu réponds juste, plus les questions se corsent. Quand tu bloques, l'IA reformule et revient sur la notion plus tard.</p></details>
         <details><summary>Mes documents restent-ils privés&nbsp;?</summary><p>Ils servent uniquement à générer tes exercices et ne sont jamais partagés.</p></details>
-        <details><summary>Je peux réviser sur mon téléphone&nbsp;?</summary><p>Oui, sur iPhone, Android et navigateur. Ta progression est synchronisée.</p></details>
+        <details><summary>Je peux réviser sur mon téléphone&nbsp;?</summary><p>Oui, directement dans le navigateur de ton téléphone, sans rien installer. Ta progression est synchronisée sur tous tes appareils.</p></details>
+        <details><summary>C'est gratuit&nbsp;?</summary><p>Oui, Revi-zon est gratuit pour commencer. L'<a data-link="pricing" href="/pricing">offre Pro</a> débloque plus de cours et de générations chaque mois.</p></details>
       </div>
     </div>
   </section>
@@ -928,8 +930,8 @@ footer a:hover{color:var(--fg)}
 <!-- 8. FOOTER -->
 <footer>
   <div class="wrap">
-    <a class="logo" href="#top" style="font-size:1.1rem"><img class="logo-mark" src="assets/logo-mark.png" alt="" width="32" height="29" style="width:32px"><span class="brand">Revi-zon</span></a>
-    <nav aria-label="Liens de pied de page"><a href="#fonctionnalites">Fonctionnalités</a><a href="#avis">Avis</a><a href="#faq">FAQ</a><a href="#top">Confidentialité</a><a href="#top">Conditions</a></nav>
+    <a class="logo" href="#top" style="font-size:1.1rem"><img class="logo-mark" src="/landing/assets/logo-mark.png" alt="" width="32" height="29" style="width:32px"><span class="brand">Revi-zon</span></a>
+    <nav aria-label="Liens de pied de page"><a href="#fonctionnalites">Fonctionnalités</a><a href="#avis">Avis</a><a href="#faq">FAQ</a><a data-link="pricing" href="/pricing">Offre Pro</a><a data-link="login" href="/login">Connexion</a><a href="#top">Confidentialité</a><a href="#top">Conditions</a></nav>
     <span>© <span id="year">2026</span> <span class="brand">Revi-zon</span></span>
   </div>
 </footer>
@@ -939,8 +941,8 @@ footer a:hover{color:var(--fg)}
 const CONFIG = {
   // Nombre réel d'utilisateurs. null = message "premiers étudiants" (aucun chiffre affiché).
   students: null,
-  // Destinations des boutons : web = l'app web, app = page de téléchargement iOS/Android
-  links: { web: '#commencer', app: '#partout' },
+  // Destinations des boutons (pages de l'app web, même site)
+  links: { web: '/dashboard/new', pricing: '/pricing', login: '/login' },
   // Avis : remplace par de vrais avis et passe example à false.
   reviews: [
     { name: 'Léa M.', handle: '@lea.revise', text: "J'ai importé mon cours de bio la veille du partiel. Les flashcards m'ont sauvé la mise.", when: 'il y a 2 j', likes: 128, example: true },
