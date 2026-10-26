@@ -1,4 +1,4 @@
-// Revi-zon : paiement de l'abonnement Pro (Stripe).
+// Revizuno : paiement de l'abonnement Pro (Stripe).
 // POST { action: "checkout" | "portal" } avec le jeton de l'utilisateur.
 // Répond { url } : page de paiement Stripe, ou portail pour gérer / résilier l'abonnement.
 

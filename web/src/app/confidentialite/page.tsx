@@ -5,7 +5,7 @@ import { LEGAL } from "@/lib/legal";
 
 export const metadata: Metadata = {
   title: "Politique de confidentialité",
-  description: "Comment Revi-zon traite tes données personnelles : données collectées, prestataires, durées de conservation et tes droits.",
+  description: "Comment Revizuno traite tes données personnelles : données collectées, prestataires, durées de conservation et tes droits.",
 };
 
 const PROVIDERS = [
@@ -65,7 +65,7 @@ export default function PrivacyPage() {
       <header className="topbar">
         <a href="/" className="brand">
           <img src="/logo-mark.png" alt="" width={40} height={36} />
-          Revi-zon
+          Revizuno
         </a>
         <Link href="/dashboard" className="btn btn-ghost btn-inline">
           Mon espace
@@ -78,7 +78,7 @@ export default function PrivacyPage() {
           Politique de <span className="mark">confidentialité</span>
         </h1>
         <p className="muted">
-          Cette politique explique quelles données personnelles Revi-zon traite, pourquoi, avec quels prestataires, combien de temps, et
+          Cette politique explique quelles données personnelles Revizuno traite, pourquoi, avec quels prestataires, combien de temps, et
           quels sont tes droits. Elle respecte la loi fédérale suisse sur la protection des données (LPD) et, lorsqu'il s'applique, le
           Règlement général européen sur la protection des données (RGPD).
         </p>
@@ -87,7 +87,7 @@ export default function PrivacyPage() {
       <section className="card stack legal-summary">
         <h2>En bref</h2>
         <ul>
-          <li>Nous traitons tes données uniquement pour faire fonctionner Revi-zon : ton compte, tes cours et tes révisions.</li>
+          <li>Nous traitons tes données uniquement pour faire fonctionner Revizuno : ton compte, tes cours et tes révisions.</li>
           <li>Pas de publicité, pas de revente de données, pas de traceurs ni de mesure d'audience.</li>
           <li>Tes cours sont analysés par l'IA d'OpenAI pour créer tes exercices ; ils ne servent pas à entraîner ses modèles.</li>
           <li>Tu peux demander à tout moment une copie ou la suppression de tes données : {LEGAL.email}.</li>
@@ -97,7 +97,7 @@ export default function PrivacyPage() {
       <section className="stack">
         <h2>1. Responsable du traitement</h2>
         <p>
-          Revi-zon est exploité par <strong>{LEGAL.operator}</strong> ({LEGAL.country}). Pour toute question sur tes données ou pour exercer
+          Revizuno est exploité par <strong>{LEGAL.operator}</strong> ({LEGAL.country}). Pour toute question sur tes données ou pour exercer
           tes droits, écris à <a href={`mailto:${LEGAL.email}`}>{LEGAL.email}</a>.
         </p>
       </section>
@@ -119,7 +119,7 @@ export default function PrivacyPage() {
           </li>
           <li>
             <strong>Conversations</strong> : tes messages avec Revi dans Studio Revi (enregistrés pour que tu retrouves ton historique). Les
-            questions posées dans le chat d'un cours ne sont pas enregistrées par Revi-zon.
+            questions posées dans le chat d'un cours ne sont pas enregistrées par Revizuno.
           </li>
           <li>
             <strong>Abonnement</strong> : identifiant client Stripe, statut et dates de l'abonnement. Les données de paiement sont traitées par
@@ -225,7 +225,7 @@ export default function PrivacyPage() {
       <section className="stack">
         <h2>7. Cookies</h2>
         <p>
-          Revi-zon utilise uniquement des cookies strictement nécessaires : ils gardent ta session ouverte une fois connecté. Aucun cookie de
+          Revizuno utilise uniquement des cookies strictement nécessaires : ils gardent ta session ouverte une fois connecté. Aucun cookie de
           publicité, de mesure d'audience ou de suivi. La page de paiement de Stripe, hébergée par Stripe, utilise ses propres cookies pour la
           sécurité des paiements.
         </p>
@@ -263,7 +263,7 @@ export default function PrivacyPage() {
       <section className="stack">
         <h2>10. Mineurs</h2>
         <p>
-          Revi-zon s'adresse aussi aux élèves. Si tu as moins de 16 ans, utilise Revi-zon avec l'accord de tes parents ou de ton
+          Revizuno s'adresse aussi aux élèves. Si tu as moins de 16 ans, utilise Revizuno avec l'accord de tes parents ou de ton
           représentant légal, en particulier pour souscrire l'offre Pro.
         </p>
       </section>

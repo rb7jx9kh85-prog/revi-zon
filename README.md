@@ -1,4 +1,4 @@
-# Revi-zon
+# Revizuno
 
 Application de révision propulsée par l'IA : l'étudiant importe ses cours (PDF, photos, notes) et l'app génère des flashcards, des textes à trous, des quiz et des fiches de révision adaptés à son niveau.
 

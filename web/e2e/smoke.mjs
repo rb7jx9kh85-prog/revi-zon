@@ -1,9 +1,10 @@
-// Test de bout en bout de Revi-zon sur un déploiement réel (Playwright).
+// Test de bout en bout de Revizuno sur un déploiement réel (Playwright).
 // Variables : BASE_URL, SUPABASE_URL, SUPABASE_KEY, E2E_EMAIL, E2E_PASSWORD,
 // PHASE ("upload" ou "study"), STUDY_ID (phase study), PAY=1 (paiement test),
 // SHARE_URL (lien de partage Vercel pour une prévisualisation protégée).
 import { chromium } from "playwright";
 import { createServerClient } from "@supabase/ssr";
+import { createClient } from "@supabase/supabase-js";
 
 const BASE = process.env.BASE_URL.replace(/\/$/, "");
 const PHASE = process.env.PHASE || "upload";
@@ -106,6 +107,41 @@ try {
     );
     console.log("STUDY_ID=" + (page.url().match(/study\/([0-9a-f-]{36})/) || [])[1]);
   } else {
+    // Questionnaire d'accueil : on le refait depuis le début
+    const sb = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_KEY);
+    const { data: auth } = await sb.auth.signInWithPassword({ email: process.env.E2E_EMAIL, password: process.env.E2E_PASSWORD });
+    await sb.from("profiles").update({ onboarding_completed: false }).eq("id", auth.user.id);
+    await page.goto(BASE + "/dashboard", { waitUntil: "networkidle" });
+    log("redirection vers le questionnaire", page.url().includes("/onboarding"), page.url());
+    let questions = 0;
+    for (let i = 0; i < 20 && !(await page.locator(".paywall, .ob-center").count()); i++) {
+      if (await page.locator("#ob-name").count()) {
+        await page.fill("#ob-name", "E2E");
+        await page.click('button:has-text("Continuer")');
+      } else if (await page.locator('button:has-text("Super, on continue")').count()) {
+        await page.click('button:has-text("Super, on continue")');
+      } else if (await page.locator(".ob-options.multi").count()) {
+        await page.locator(".ob-option").first().click();
+        await page.click('button:has-text("Continuer")');
+      } else {
+        await page.locator(".ob-option").first().click();
+      }
+      questions += 1;
+      await page.waitForTimeout(450);
+    }
+    log("questionnaire", questions >= 8, `${questions} écrans`);
+    const loading = await page.locator(".ob-ring").count();
+    await page.waitForSelector(".paywall", { timeout: 20000 }).then(
+      async () => log("chargement puis offre Pro", loading > 0, (await page.locator(".paywall .ob-title").innerText()) + " · " + (await page.locator(".pw-perday").innerText().catch(() => "")).replace(/\s+/g, " ")),
+      () => log("chargement puis offre Pro", false),
+    );
+    log("bouton gratuit discret", (await page.locator(".pw-skip").count()) === 1);
+    await page.click(".pw-skip");
+    await page.waitForURL(/\/dashboard/, { timeout: 15000 }).then(
+      () => log("version gratuite puis tableau de bord", true),
+      () => log("version gratuite puis tableau de bord", false, page.url()),
+    );
+
     const id = process.env.STUDY_ID;
     const base = `${BASE}/study/${id}`;
     await page.goto(base, { waitUntil: "networkidle" });

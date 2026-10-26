@@ -1,4 +1,4 @@
-// Petite pluie de confettis aux couleurs de Revi-zon (sans dépendance).
+// Petite pluie de confettis aux couleurs de Revizuno (sans dépendance).
 const COLORS = ["#ffe14d", "#ff84b7", "#7cc0ff", "#52dda2", "#141b3d"];
 
 export function burstConfetti(count = 90) {

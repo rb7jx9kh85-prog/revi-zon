@@ -42,7 +42,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
   const since = new Date(Date.now() - 120 * 86_400_000).toISOString();
   const sessionsSince = new Date(Date.now() - 62 * 86_400_000).toISOString();
   const [profileRes, usageRes, limitsRes, docsRes, attemptsRes, exercisesRes, scheduleRes, sessionsRes] = await Promise.all([
-    supabase.from("profiles").select("display_name, school_level, plan").eq("id", user.id).maybeSingle(),
+    supabase.from("profiles").select("display_name, school_level, plan, onboarding_completed").eq("id", user.id).maybeSingle(),
     supabase.from("usage_monthly").select("documents_count").eq("user_id", user.id).eq("period", period).maybeSingle(),
     supabase.from("plan_limits").select("plan, max_documents_per_month"),
     supabase
@@ -55,7 +55,9 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
     supabase.from("study_sessions").select("id, document_id, title, starts_at, duration_min, done").gte("starts_at", sessionsSince).order("starts_at"),
   ]);
 
-  const profile = profileRes.data as { display_name: string | null; school_level: string | null; plan: string } | null;
+  const profile = profileRes.data as { display_name: string | null; school_level: string | null; plan: string; onboarding_completed: boolean } | null;
+  // Premier passage : questionnaire d'accueil avant tout
+  if (profile && !profile.onboarding_completed) redirect("/onboarding");
   const plan = profile?.plan ?? "free";
   const used = (usageRes.data as { documents_count: number } | null)?.documents_count ?? 0;
   const limit =
@@ -106,7 +108,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
       <header className="topbar">
         <Link href="/dashboard" className="brand">
           <img src="/logo-mark.png" alt="" width={40} height={36} />
-          Revi-zon
+          Revizuno
         </Link>
         <nav className="top-links">
           <Link href="/studio" className="top-link">

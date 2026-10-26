@@ -76,7 +76,7 @@ export function PlannerBoard({ activity, sessions: initial, courses }: { activit
       title: s.title,
       start: new Date(s.starts_at),
       durationMin: s.duration_min,
-      details: course ? `Session de révision Revi-zon : ${course.title}` : "Session de révision Revi-zon",
+      details: course ? `Session de révision Revizuno : ${course.title}` : "Session de révision Revizuno",
       url: course ? `${origin}/study/${course.id}` : `${origin}/dashboard`,
     };
   }

@@ -16,7 +16,7 @@ export function WelcomePro() {
   return (
     <section className="welcome-pro pop-in" role="status">
       <div className="stack" style={{ gap: 4 }}>
-        <strong>Bienvenue dans Revi-zon Pro !</strong>
+        <strong>Bienvenue dans Revizuno Pro !</strong>
         <span>Plus de cours chaque mois et des fichiers plus lourds : tout est débloqué. Bonnes révisions !</span>
       </div>
       <button type="button" className="icon-btn" style={{ display: "block" }} onClick={() => setVisible(false)} aria-label="Fermer">

@@ -48,7 +48,7 @@ export default async function PricingPage({ searchParams }: { searchParams: Prom
       <header className="topbar">
         <a href="/" className="brand">
           <img src="/logo-mark.png" alt="" width={40} height={36} />
-          Revi-zon
+          Revizuno
         </a>
         <Link href={user ? "/dashboard" : "/login"} className="btn btn-ghost btn-inline">
           {user ? "Mes cours" : "Connexion"}

@@ -1,5 +1,5 @@
 {
-  "name": "revi-zon-web",
+  "name": "revizuno-web",
   "private": true,
   "scripts": {
     "dev": "next dev",
