@@ -44,7 +44,10 @@ type Message = { role: "user" | "assistant"; content: string };
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: CORS });
   if (req.method !== "POST") return json({ error: "Méthode non autorisée" }, 405);
-  if (!OPENAI_API_KEY) return json({ error: "OPENAI_API_KEY n'est pas configurée sur le projet." }, 500);
+  if (!OPENAI_API_KEY) {
+    console.error("chat: OPENAI_API_KEY manquante");
+    return json({ error: "Revi n'est pas encore disponible. Réessaie plus tard." }, 503);
+  }
 
   const token = (req.headers.get("Authorization") ?? "").replace(/^Bearer\s+/i, "");
   const { data: auth } = token ? await admin.auth.getUser(token) : { data: { user: null } };

@@ -1,0 +1,151 @@
+// Test de bout en bout de Revi-zon sur un déploiement réel (Playwright).
+// Variables : BASE_URL, SUPABASE_URL, SUPABASE_KEY, E2E_EMAIL, E2E_PASSWORD,
+// PHASE ("upload" ou "study"), STUDY_ID (phase study).
+import { chromium } from "playwright";
+import { createServerClient } from "@supabase/ssr";
+
+const BASE = process.env.BASE_URL.replace(/\/$/, "");
+const PHASE = process.env.PHASE || "upload";
+const results = [];
+const log = (step, ok, detail = "") => {
+  results.push({ step, ok, detail });
+  console.log(`${ok ? "OK  " : "FAIL"} ${step}${detail ? " — " + detail : ""}`);
+};
+
+async function sessionCookies() {
+  const jar = new Map();
+  const supabase = createServerClient(process.env.SUPABASE_URL, process.env.SUPABASE_KEY, {
+    cookies: {
+      getAll: () => [...jar].map(([name, value]) => ({ name, value })),
+      setAll: (list) => list.forEach(({ name, value }) => jar.set(name, value)),
+    },
+  });
+  const { error } = await supabase.auth.signInWithPassword({ email: process.env.E2E_EMAIL, password: process.env.E2E_PASSWORD });
+  if (error) throw new Error("connexion test : " + error.message);
+  const host = new URL(BASE).hostname;
+  return [...jar].map(([name, value]) => ({ name, value, domain: host, path: "/", sameSite: "Lax", secure: BASE.startsWith("https") }));
+}
+
+function watch(page, label) {
+  page.on("console", (m) => m.type() === "error" && results.push({ step: `console ${label}`, ok: false, detail: m.text().slice(0, 300) }));
+  page.on("pageerror", (e) => results.push({ step: `pageerror ${label}`, ok: false, detail: String(e).slice(0, 300) }));
+  page.on("response", (r) => {
+    const u = r.url();
+    if (r.status() >= 500 || (r.status() === 404 && !u.includes("favicon"))) results.push({ step: `http ${label}`, ok: false, detail: `${r.status()} ${u}` });
+  });
+}
+
+async function noHorizontalScroll(page, label) {
+  const over = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
+  log(`mobile sans débordement ${label}`, over <= 1, `${over}px`);
+}
+
+const browser = await chromium.launch();
+try {
+  const anon = await browser.newContext();
+  const p0 = await anon.newPage();
+  watch(p0, "public");
+  for (const path of ["/", "/login", "/pricing"]) {
+    const r = await p0.goto(BASE + path, { waitUntil: "networkidle" });
+    log(`page publique ${path}`, r.status() === 200, String(r.status()));
+  }
+  await p0.goto(BASE + "/dashboard");
+  log("dashboard protégé", p0.url().includes("/login"), p0.url());
+  await p0.goto(BASE + "/");
+  const cta = await p0.locator('a[href="/dashboard/new"]').first().getAttribute("href");
+  log("bouton landing vers l'app", cta === "/dashboard/new", cta);
+
+  const ctx = await browser.newContext({ viewport: { width: 1280, height: 900 } });
+  await ctx.addCookies(await sessionCookies());
+  const page = await ctx.newPage();
+  watch(page, "connecté");
+
+  if (PHASE === "upload") {
+    await page.goto(BASE + "/dashboard", { waitUntil: "networkidle" });
+    log("dashboard connecté", (await page.locator("h1").innerText()).includes("Salut"), await page.locator("h1").innerText());
+
+    await page.fill("#display_name", "E2E");
+    await page.selectOption("#school_level", "Université / Haute école");
+    await page.click('form button[type="submit"]:has-text("Enregistrer")');
+    await page.waitForSelector("text=Profil enregistré.", { timeout: 15000 }).then(
+      () => log("profil enregistré", true),
+      () => log("profil enregistré", false),
+    );
+
+    await page.goto(BASE + "/dashboard/new", { waitUntil: "networkidle" });
+    await page.click("text=Coller du texte");
+    await page.fill("#paste", "La photosynthèse est le processus par lequel les plantes vertes transforment l'énergie lumineuse en énergie chimique. Elle se déroule dans les chloroplastes, grâce à la chlorophylle. Les plantes absorbent du dioxyde de carbone et de l'eau, et produisent du glucose et du dioxygène. L'équation bilan est : 6 CO2 + 6 H2O donne C6H12O6 + 6 O2. La phase lumineuse a lieu dans les thylakoïdes, le cycle de Calvin dans le stroma.");
+    await page.fill("#title", "Test E2E photosynthèse");
+    await page.click('button:has-text("Créer mon set de révision")');
+    await page.waitForURL(/\/study\/[0-9a-f-]{36}/, { timeout: 30000 }).then(
+      () => log("import puis redirection", true, page.url()),
+      async () => log("import puis redirection", false, (await page.locator(".notice.error").allInnerTexts()).join(" | ")),
+    );
+    await page.waitForSelector("text=/Revi prépare|préparation a échoué/", { timeout: 30000 }).then(
+      async () => log("écran de préparation", true, (await page.locator("main h2").first().innerText())),
+      () => log("écran de préparation", false),
+    );
+    await page.waitForTimeout(8000);
+    log("état après 8 s", true, (await page.locator(".study-main").innerText()).slice(0, 200).replace(/\s+/g, " "));
+    console.log("STUDY_ID=" + (page.url().match(/study\/([0-9a-f-]{36})/) || [])[1]);
+  } else {
+    const id = process.env.STUDY_ID;
+    const base = `${BASE}/study/${id}`;
+    await page.goto(base, { waitUntil: "networkidle" });
+    log("vue d'ensemble", (await page.locator("text=maîtrisé").count()) > 0);
+
+    await page.goto(base + "/flashcards", { waitUntil: "networkidle" });
+    const before = await page.locator(".session-label").innerText();
+    await page.click(".fc");
+    await page.click('button:has-text("Je savais")');
+    const after = await page.locator(".session-label, .done h2").first().innerText();
+    log("flashcards", before !== after, `${before} -> ${after}`);
+
+    await page.goto(base + "/quiz", { waitUntil: "networkidle" });
+    await page.locator(".option").first().click();
+    await page.waitForSelector(".feedback", { timeout: 5000 }).then(
+      async () => log("quiz", true, await page.locator(".verdict").innerText()),
+      () => log("quiz", false),
+    );
+
+    await page.goto(base + "/blanks", { waitUntil: "networkidle" });
+    const inputs = page.locator(".blank input");
+    const n = await inputs.count();
+    for (let i = 0; i < n; i++) await inputs.nth(i).fill("chlorophylle");
+    await page.click('button:has-text("Valider")');
+    await page.waitForSelector(".verdict", { timeout: 5000 }).then(
+      async () => log("textes à trous", true, await page.locator(".verdict").innerText()),
+      () => log("textes à trous", false),
+    );
+
+    await page.goto(base + "/notes", { waitUntil: "networkidle" });
+    log("fiche", (await page.locator(".sheet-title").count()) === 1);
+
+    await page.fill("#chat-input", "Où a lieu la photosynthèse ?");
+    await page.click(".send-btn");
+    await page.waitForSelector(".bubble.bot:not(.typing), .chat .notice.error", { timeout: 60000 }).then(
+      async () => log("chat", true, (await page.locator(".bubble.bot:not(.typing), .chat .notice.error").last().innerText()).slice(0, 160)),
+      () => log("chat", false),
+    );
+
+    await page.goto(BASE + "/pricing", { waitUntil: "networkidle" });
+    await page.click('button:has-text("Passer à Pro")');
+    await page.waitForURL(/checkout\.stripe\.com/, { timeout: 15000 }).then(
+      () => log("paiement Stripe", true, "redirection vers Stripe"),
+      async () => log("paiement Stripe", false, (await page.locator(".notice.error").allInnerTexts()).join(" | ")),
+    );
+
+    const mobile = await browser.newContext({ viewport: { width: 390, height: 844 }, isMobile: true });
+    await mobile.addCookies(await sessionCookies());
+    const m = await mobile.newPage();
+    for (const path of ["/", "/dashboard", `/study/${id}/quiz`, "/pricing"]) {
+      await m.goto(BASE + path, { waitUntil: "networkidle" });
+      await noHorizontalScroll(m, path);
+    }
+  }
+} finally {
+  await browser.close();
+  const failed = results.filter((r) => !r.ok);
+  console.log(`\nRÉSUMÉ ${results.length - failed.length} OK, ${failed.length} échecs`);
+  for (const f of failed) console.log("  ✗", f.step, "—", f.detail);
+}

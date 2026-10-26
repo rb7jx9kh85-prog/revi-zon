@@ -45,10 +45,10 @@ export default async function PricingPage({ searchParams }: { searchParams: Prom
   return (
     <main className="page">
       <header className="topbar">
-        <Link href="/" className="brand">
+        <a href="/" className="brand">
           <img src="/logo-mark.png" alt="" width={40} height={36} />
           Revi-zon
-        </Link>
+        </a>
         <Link href={user ? "/dashboard" : "/login"} className="btn btn-ghost btn-inline">
           {user ? "Mes cours" : "Connexion"}
         </Link>

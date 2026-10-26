@@ -344,7 +344,6 @@ async function authenticate(req: Request, client: SupabaseClient) {
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: CORS });
   if (req.method !== "POST") return json({ error: "Méthode non autorisée" }, 405);
-  if (!OPENAI_API_KEY) return json({ error: "OPENAI_API_KEY n'est pas configurée sur le projet." }, 500);
 
   const user = await authenticate(req, admin);
   if (!user) return json({ error: "Non connecté" }, 401);
@@ -364,6 +363,13 @@ Deno.serve(async (req) => {
     .maybeSingle<Doc>();
   if (!doc) return json({ error: "Document introuvable" }, 404);
   if (doc.status === "ready") return json({ status: "ready" });
+
+  if (!OPENAI_API_KEY) {
+    const message = "Le service d'IA n'est pas encore configuré. Réessaie plus tard.";
+    console.error("process-document: OPENAI_API_KEY manquante");
+    await admin.from("documents").update({ status: "failed", error_message: message }).eq("id", doc.id);
+    return json({ error: message }, 503);
+  }
 
   // Réserve le document (évite deux traitements en parallèle)
   const staleBefore = new Date(Date.now() - STALE_MINUTES * 60_000).toISOString();

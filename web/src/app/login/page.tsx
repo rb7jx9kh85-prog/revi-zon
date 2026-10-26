@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { safeNextPath } from "@/lib/redirect";
 import { LoginForm } from "./login-form";
 
@@ -20,10 +19,10 @@ export default async function LoginPage({
   return (
     <main className="shell">
       <div className="stack" style={{ width: "min(100%, 420px)" }}>
-        <Link href="/" className="brand" style={{ justifySelf: "center" }}>
+        <a href="/" className="brand" style={{ justifySelf: "center" }}>
           <img src="/logo-mark.png" alt="" width={40} height={36} />
           Revi-zon
-        </Link>
+        </a>
         <section className="card stack">
           <div className="stack" style={{ gap: 8 }}>
             <h1 style={{ fontSize: "1.9rem" }}>

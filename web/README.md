@@ -32,11 +32,11 @@ npm run dev                  # http://localhost:3000
 
 ### 1. Supabase (dashboard du projet `czspzlnqmitrcyweknwm`)
 
-1. **Base de données** : déjà installée (4 migrations, voir `supabase/README.md`).
+1. **Base de données** : déjà installée (5 migrations, voir `supabase/README.md`).
 2. **Authentication > URL Configuration**
-   - Site URL : l'adresse de l'app sur Vercel, par ex. `https://app-revi-zon.vercel.app`
+   - Site URL : l'adresse de l'app sur Vercel, par ex. `https://revi-zon.vercel.app`
    - Redirect URLs : ajouter
-     - `https://app-revi-zon.vercel.app/auth/callback`
+     - `https://revi-zon.vercel.app/auth/callback`
      - `https://*-<ton-compte>.vercel.app/auth/callback` (prévisualisations Vercel)
      - `http://localhost:3000/auth/callback`
 3. **Authentication > Sign In / Providers**
