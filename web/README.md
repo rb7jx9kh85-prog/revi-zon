@@ -4,6 +4,8 @@ Espace étudiant : connexion, import de cours, révision avec flashcards, quiz, 
 
 ## Ce qui marche
 
+- **Landing** (`/`) : la page d'accueil (`public/landing/index.html`) est servie par l'app. Ses boutons mènent à l'inscription (`/dashboard/new`), à la connexion et à l'offre Pro.
+- **Offre Pro** (`/pricing`) : gratuit vs Pro, paiement Stripe Checkout, portail Stripe pour gérer ou résilier. Retour sur `/billing/success`, qui attend la confirmation de Stripe.
 - **Connexion sans mot de passe** (lien magique par e-mail) et **avec Google**. Le compte est créé à la première connexion.
 - **Mes cours** (`/dashboard`) : liste des cours, quota du mois, profil (prénom, niveau d'études).
 - **Import** (`/dashboard/new`) : PDF, photo (JPG, PNG, WebP) ou texte collé.
@@ -54,9 +56,24 @@ Supabase > Edge Functions > Secrets, ajouter :
 
 Pas besoin de redéployer : les fonctions lisent les secrets à chaque appel.
 
-### 3. Vercel
+### 3. Paiement Stripe
 
-Créer un **nouveau projet** depuis le repo `revi-zon` (la landing garde son propre projet) :
+1. Dans Stripe (mode test pour commencer) : **Product catalog > Add product** « Revi-zon Pro », prix récurrent mensuel (ex. 9.90 CHF). Copier l'identifiant du prix (`price_...`).
+2. **Developers > API keys** : copier la clé secrète (`sk_test_...`).
+3. **Developers > Webhooks > Add endpoint** :
+   - URL : `https://czspzlnqmitrcyweknwm.supabase.co/functions/v1/stripe-webhook`
+   - Événements : `checkout.session.completed`, `customer.subscription.created`, `customer.subscription.updated`, `customer.subscription.deleted`
+   - Copier le « Signing secret » (`whsec_...`).
+4. **Settings > Billing > Customer portal** : activer le portail (résiliation, changement de carte).
+5. Supabase > Edge Functions > Secrets : `STRIPE_SECRET_KEY`, `STRIPE_PRICE_ID`, `STRIPE_WEBHOOK_SECRET`
+   (optionnel : `APP_URL` = adresse du site, sinon l'origine du navigateur est utilisée).
+6. Vercel : `NEXT_PUBLIC_PRO_PRICE_LABEL` = le prix affiché (ex. `9.90 CHF`), identique au prix Stripe.
+
+Carte de test Stripe : `4242 4242 4242 4242`, date future, CVC quelconque.
+
+### 4. Vercel
+
+Un seul projet sert la landing et l'app : dans le projet existant `revi-zon` (ou un nouveau) :
 
 - Root Directory : `web`
 - Framework : Next.js (détecté automatiquement)

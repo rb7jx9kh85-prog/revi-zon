@@ -13,7 +13,9 @@ Projet Supabase : `czspzlnqmitrcyweknwm`
 | `migrations/20261025120200_storage.sql` | Bucket privé `documents` et ses règles |
 | `migrations/20261025140000_ai_pipeline.sql` | Génération IA : type `study_set`, colonnes du document (fichier OpenAI, résumé, questions suggérées), quota de générations, suivi des coûts, relance d'un document en échec |
 
-Les 4 migrations sont appliquées sur le projet.
+| `migrations/20261026090000_billing.sql` | Abonnement Stripe sur le profil : client, statut, fin de période (écrits uniquement par le serveur) |
+
+Les 5 migrations sont appliquées sur le projet.
 
 ## Edge Functions (`functions/`)
 
@@ -21,9 +23,12 @@ Les 4 migrations sont appliquées sur le projet.
 |---|---|
 | `process-document` | `POST { document_id }`. Vérifie l'utilisateur et le quota, puis en arrière-plan envoie le cours à OpenAI (PDF via l'API Files, image en base64, texte brut) et enregistre fiche, exercices validés, coût et statut. |
 | `chat` | `POST { document_id, messages }`. Tuteur « Revi » qui répond à partir de la fiche et du cours. |
+| `billing` | `POST { action: "checkout" \| "portal" }`. Crée la session de paiement Stripe ou le lien du portail d'abonnement. |
+| `stripe-webhook` | Reçoit les événements Stripe (signature vérifiée) et passe le profil en `pro` ou `free`. |
 
 Les deux sont déployées avec `verify_jwt = false` et vérifient elles-mêmes le jeton de l'utilisateur
-(compatible avec les nouvelles clés publishable / secret). Secret requis : `OPENAI_API_KEY`.
+(compatible avec les nouvelles clés publishable / secret ; `stripe-webhook` vérifie la signature Stripe).
+Secrets requis : `OPENAI_API_KEY`, `STRIPE_SECRET_KEY`, `STRIPE_PRICE_ID`, `STRIPE_WEBHOOK_SECRET`.
 
 ## Modèle de données
 
