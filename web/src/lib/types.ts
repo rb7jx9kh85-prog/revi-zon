@@ -30,3 +30,24 @@ export type StudyDocument = {
   suggested_questions: string[] | null;
   created_at: string;
 };
+
+export type StudySession = {
+  id: string;
+  document_id: string | null;
+  title: string;
+  starts_at: string;
+  duration_min: number;
+  done: boolean;
+};
+
+export type ExplainFeedback = {
+  score: number;
+  verdict: string;
+  strengths: string[];
+  missing: string[];
+  misconceptions: string[];
+  model_answer: string;
+  tip: string;
+};
+
+export type ChatThread = { id: string; title: string; document_id: string | null; updated_at: string };

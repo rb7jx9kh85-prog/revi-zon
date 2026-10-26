@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { Markdown } from "./markdown";
@@ -68,6 +69,9 @@ export function ChatPanel({
           <span className="chat-dot" aria-hidden="true" />
           Demande à Revi
         </span>
+        <Link href={`/studio?doc=${documentId}`} className="chip" title="Ouvrir une conversation en plein écran sur ce cours">
+          Plein écran
+        </Link>
         {onClose ? (
           <button type="button" className="icon-btn" onClick={onClose} aria-label="Fermer le chat">
             ×
