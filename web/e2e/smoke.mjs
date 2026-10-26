@@ -1,6 +1,7 @@
 // Test de bout en bout de Revi-zon sur un déploiement réel (Playwright).
 // Variables : BASE_URL, SUPABASE_URL, SUPABASE_KEY, E2E_EMAIL, E2E_PASSWORD,
-// PHASE ("upload" ou "study"), STUDY_ID (phase study).
+// PHASE ("upload" ou "study"), STUDY_ID (phase study), PAY=1 (paiement test),
+// SHARE_URL (lien de partage Vercel pour une prévisualisation protégée).
 import { chromium } from "playwright";
 import { createServerClient } from "@supabase/ssr";
 
@@ -40,9 +41,18 @@ async function noHorizontalScroll(page, label) {
   log(`mobile sans débordement ${label}`, over <= 1, `${over}px`);
 }
 
+// Prévisualisation protégée : le lien de partage dépose un cookie d'accès
+async function prime(context) {
+  if (!process.env.SHARE_URL) return;
+  const p = await context.newPage();
+  await p.goto(process.env.SHARE_URL);
+  await p.close();
+}
+
 const browser = await chromium.launch();
 try {
   const anon = await browser.newContext();
+  await prime(anon);
   const p0 = await anon.newPage();
   watch(p0, "public");
   for (const path of ["/", "/login", "/pricing"]) {
@@ -56,6 +66,7 @@ try {
   log("bouton landing vers l'app", cta === "/dashboard", cta);
 
   const ctx = await browser.newContext({ viewport: { width: 1280, height: 900 } });
+  await prime(ctx);
   await ctx.addCookies(await sessionCookies());
   const page = await ctx.newPage();
   watch(page, "connecté");
@@ -216,6 +227,7 @@ try {
     }
 
     const mobile = await browser.newContext({ viewport: { width: 390, height: 844 }, isMobile: true });
+    await prime(mobile);
     await mobile.addCookies(await sessionCookies());
     const m = await mobile.newPage();
     for (const path of ["/", "/dashboard", `/study/${id}/quiz`, `/study/${id}/pdf`, "/studio", "/pricing"]) {
