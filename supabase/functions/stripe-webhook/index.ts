@@ -6,7 +6,10 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
 import Stripe from "npm:stripe@17";
 
-const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") ?? "", { httpClient: Stripe.createFetchHttpClient() });
+// Créé à la demande : sans clé, la fonction doit quand même démarrer
+let stripeClient: Stripe | null = null;
+const stripe = () =>
+  (stripeClient ??= new Stripe(Deno.env.get("STRIPE_SECRET_KEY") ?? "", { httpClient: Stripe.createFetchHttpClient() }));
 const cryptoProvider = Stripe.createSubtleCryptoProvider();
 const WEBHOOK_SECRET = Deno.env.get("STRIPE_WEBHOOK_SECRET") ?? "";
 
@@ -61,13 +64,13 @@ async function syncSubscription(sub: Stripe.Subscription, fallbackUserId?: strin
 
 Deno.serve(async (req) => {
   if (req.method !== "POST") return new Response("Méthode non autorisée", { status: 405 });
-  if (!WEBHOOK_SECRET) return new Response("STRIPE_WEBHOOK_SECRET manquant", { status: 500 });
+  if (!WEBHOOK_SECRET || !Deno.env.get("STRIPE_SECRET_KEY")) return new Response("Stripe n'est pas configuré", { status: 503 });
 
   const signature = req.headers.get("Stripe-Signature");
   const body = await req.text();
   let event: Stripe.Event;
   try {
-    event = await stripe.webhooks.constructEventAsync(body, signature ?? "", WEBHOOK_SECRET, undefined, cryptoProvider);
+    event = await stripe().webhooks.constructEventAsync(body, signature ?? "", WEBHOOK_SECRET, undefined, cryptoProvider);
   } catch (err) {
     return new Response(`Signature invalide : ${err instanceof Error ? err.message : err}`, { status: 400 });
   }
@@ -78,7 +81,7 @@ Deno.serve(async (req) => {
         const session = event.data.object as Stripe.Checkout.Session;
         if (session.mode === "subscription" && session.subscription) {
           const subId = typeof session.subscription === "string" ? session.subscription : session.subscription.id;
-          const sub = await stripe.subscriptions.retrieve(subId);
+          const sub = await stripe().subscriptions.retrieve(subId);
           await syncSubscription(sub, session.client_reference_id);
         }
         break;

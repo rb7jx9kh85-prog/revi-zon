@@ -34,7 +34,9 @@ function secretKey(): string {
 const admin = createClient(Deno.env.get("SUPABASE_URL")!, secretKey(), {
   auth: { persistSession: false, autoRefreshToken: false },
 });
-const stripe = new Stripe(STRIPE_SECRET_KEY, { httpClient: Stripe.createFetchHttpClient() });
+// Créé à la demande : sans clé, la fonction doit quand même démarrer (CORS, message clair)
+let stripeClient: Stripe | null = null;
+const stripe = () => (stripeClient ??= new Stripe(STRIPE_SECRET_KEY, { httpClient: Stripe.createFetchHttpClient() }));
 
 // Adresse de l'app pour le retour depuis Stripe : APP_URL si défini, sinon l'origine du navigateur.
 function appOrigin(req: Request): string | null {
@@ -80,18 +82,18 @@ Deno.serve(async (req) => {
   try {
     if (action === "portal") {
       if (!customerId) return json({ error: "Aucun abonnement à gérer." }, 400);
-      const portal = await stripe.billingPortal.sessions.create({ customer: customerId, return_url: `${origin}/dashboard` });
+      const portal = await stripe().billingPortal.sessions.create({ customer: customerId, return_url: `${origin}/dashboard` });
       return json({ url: portal.url });
     }
 
     // Déjà abonné : on renvoie vers le portail plutôt que de facturer deux fois
     if (customerId && profile?.plan === "pro" && ["active", "trialing", "past_due"].includes(String(profile?.subscription_status))) {
-      const portal = await stripe.billingPortal.sessions.create({ customer: customerId, return_url: `${origin}/dashboard` });
+      const portal = await stripe().billingPortal.sessions.create({ customer: customerId, return_url: `${origin}/dashboard` });
       return json({ url: portal.url });
     }
 
     if (!customerId) {
-      const customer = await stripe.customers.create({
+      const customer = await stripe().customers.create({
         email: user.email ?? undefined,
         metadata: { supabase_user_id: user.id },
       });
@@ -99,7 +101,7 @@ Deno.serve(async (req) => {
       await admin.from("profiles").update({ stripe_customer_id: customerId }).eq("id", user.id);
     }
 
-    const session = await stripe.checkout.sessions.create({
+    const session = await stripe().checkout.sessions.create({
       mode: "subscription",
       customer: customerId,
       client_reference_id: user.id,
