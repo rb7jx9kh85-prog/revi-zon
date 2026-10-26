@@ -331,5 +331,25 @@ begin
   assert (select tokens_used from public.usage_monthly where user_id = '00000000-0000-0000-0000-00000000000b') = 2000, 'tokens cumulés';
 end $$;
 
+-- ---------------------------------------------------------------------------
+-- Abonnement : colonnes lisibles mais non modifiables par l'étudiant
+-- ---------------------------------------------------------------------------
+reset role;
+set role authenticated;
+select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-00000000000a', false);
+do $$ begin
+  assert (select subscription_status from public.profiles) is null, 'colonnes de facturation lisibles';
+  begin
+    update public.profiles set stripe_customer_id = 'cus_pirate';
+    raise exception 'ÉCHEC : identifiant Stripe modifiable par le client';
+  exception when insufficient_privilege then null;
+  end;
+  begin
+    update public.profiles set subscription_status = 'active';
+    raise exception 'ÉCHEC : statut d''abonnement modifiable par le client';
+  exception when insufficient_privilege then null;
+  end;
+end $$;
+
 reset role;
 \echo 'Tous les tests sont passés.'

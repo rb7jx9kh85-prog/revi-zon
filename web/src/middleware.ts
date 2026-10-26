@@ -6,5 +6,6 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/((?!_next/static|_next/image|favicon.ico|icon.png|logo-mark.png|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)"],
+  // Ni la landing ("/" et /landing/...), ni les fichiers statiques ne passent par Supabase.
+  matcher: ["/((?!_next/static|_next/image|landing/|favicon.ico|icon.png|logo-mark.png|.*\\.(?:svg|png|jpg|jpeg|gif|webp|html)$).+)"],
 };
