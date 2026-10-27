@@ -34,9 +34,9 @@ npm run dev                  # http://localhost:3000
 
 1. **Base de données** : déjà installée (5 migrations, voir `supabase/README.md`).
 2. **Authentication > URL Configuration**
-   - Site URL : l'adresse de l'app sur Vercel, par ex. `https://revi-zon.vercel.app`
+   - Site URL : `https://www.revizuno.com`
    - Redirect URLs : ajouter
-     - `https://revi-zon.vercel.app/auth/callback`
+     - `https://www.revizuno.com/**` et `https://revizuno.com/**`
      - `https://*-<ton-compte>.vercel.app/auth/callback` (prévisualisations Vercel)
      - `http://localhost:3000/auth/callback`
 3. **Authentication > Sign In / Providers**
