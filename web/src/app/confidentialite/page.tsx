@@ -202,8 +202,8 @@ export default function PrivacyPage() {
         <h2>6. Durée de conservation</h2>
         <ul>
           <li>
-            <strong>Compte, cours, révisions et conversations</strong> : tant que ton compte existe. Sur demande, nous les supprimons dans un
-            délai de 30 jours, y compris les copies de tes fichiers chez OpenAI.
+            <strong>Compte, cours, révisions et conversations</strong> : tant que ton compte existe. Tu peux supprimer ton compte à tout
+            moment depuis ton tableau de bord : tout est effacé immédiatement, y compris tes fichiers et leurs copies chez OpenAI.
           </li>
           <li>
             <strong>Données traitées par OpenAI</strong> : les requêtes peuvent être conservées par OpenAI jusqu'à 30 jours pour la détection
@@ -246,7 +246,7 @@ export default function PrivacyPage() {
         <ul>
           <li>obtenir une copie de tes données et des informations sur leur traitement (droit d'accès) ;</li>
           <li>les faire corriger ou compléter ;</li>
-          <li>les faire supprimer, ainsi que ton compte ;</li>
+          <li>les faire supprimer, ainsi que ton compte (directement depuis ton tableau de bord) ;</li>
           <li>les recevoir dans un format courant pour les transférer ailleurs (portabilité) ;</li>
           <li>t'opposer à un traitement ou en demander la limitation.</li>
         </ul>
