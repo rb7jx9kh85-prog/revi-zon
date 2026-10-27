@@ -13,9 +13,9 @@ const ERRORS: Record<string, string> = {
 export default async function LoginPage({
   searchParams,
 }: {
-  searchParams: Promise<{ next?: string; error?: string }>;
+  searchParams: Promise<{ next?: string; error?: string; compte?: string }>;
 }) {
-  const { next, error } = await searchParams;
+  const { next, error, compte } = await searchParams;
 
   return (
     <main className="shell">
@@ -31,6 +31,9 @@ export default async function LoginPage({
             </h1>
             <p className="muted">Pas de compte ? Il est créé automatiquement à ta première connexion.</p>
           </div>
+          {compte === "supprime" && (
+            <p className="notice ok">Ton compte a bien été supprimé. Tu peux te réinscrire quand tu veux avec la même adresse e-mail.</p>
+          )}
           {error && <p className="notice error">{ERRORS[error] ?? ERRORS.lien_invalide}</p>}
           <LoginForm next={safeNextPath(next)} />
         </section>

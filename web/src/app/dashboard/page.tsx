@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { BillingButton } from "@/components/billing-button";
+import { DeleteAccount } from "@/components/dashboard/delete-account";
 import { PlannerBoard } from "@/components/dashboard/planner-board";
 import { WelcomePro } from "@/components/dashboard/welcome-pro";
 import { SiteFooter } from "@/components/site-footer";
@@ -276,6 +277,8 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
         <p className="muted">Ton niveau aide Revi à adapter la difficulté des exercices et ses explications.</p>
         <ProfileForm displayName={profile?.display_name ?? ""} schoolLevel={profile?.school_level ?? ""} />
       </section>
+
+      <DeleteAccount isPro={plan === "pro"} />
       <SiteFooter />
     </main>
   );

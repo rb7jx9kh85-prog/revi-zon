@@ -587,3 +587,11 @@ textarea:focus { border-color: var(--fg); outline: none; }
 .pw-faq-item p { padding: 0 18px 16px; color: var(--muted); }
 .pw-skip { justify-self: center; margin-top: 6px; border: 0; background: none; color: var(--muted); opacity: 0.6; font: 500 0.78rem var(--f-body), sans-serif; text-decoration: underline; text-underline-offset: 2px; cursor: pointer; }
 .pw-skip:hover { opacity: 0.9; }
+
+/* Suppression du compte */
+.danger-zone { border-color: var(--danger); box-shadow: 3px 3px 0 var(--danger); }
+.danger-list { margin: 0; padding-left: 1.2em; display: grid; gap: 4px; }
+.btn-danger { background: var(--danger); color: #fff; border-color: var(--danger); }
+.btn-danger:disabled { opacity: 0.45; cursor: not-allowed; }
+.btn-danger-ghost { background: transparent; color: var(--danger); border-color: var(--danger); }
+.btn-danger-ghost:hover { background: color-mix(in srgb, var(--danger) 10%, transparent); }
