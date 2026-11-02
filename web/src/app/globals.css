@@ -595,3 +595,6 @@ textarea:focus { border-color: var(--fg); outline: none; }
 .btn-danger:disabled { opacity: 0.45; cursor: not-allowed; }
 .btn-danger-ghost { background: transparent; color: var(--danger); border-color: var(--danger); }
 .btn-danger-ghost:hover { background: color-mix(in srgb, var(--danger) 10%, transparent); }
+
+/* Inscription à la fin du questionnaire */
+.ob-signup input { font-size: 1.1rem; padding: 15px 16px; border: 2px solid var(--fg); background: var(--card); }

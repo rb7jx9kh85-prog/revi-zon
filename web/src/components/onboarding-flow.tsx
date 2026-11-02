@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
+import { callbackUrl, readableAuthError } from "@/lib/auth-client";
 import { burstConfetti } from "@/lib/confetti";
 import { readFunctionError } from "@/lib/fn-error";
 import { createClient } from "@/lib/supabase/client";
@@ -73,6 +74,28 @@ const QUESTIONS: Question[] = [
   },
   {
     kind: "single",
+    key: "stress",
+    title: "Comment tu te sens avant un examen ?",
+    options: [
+      { value: "calm", label: "Serein·e", emoji: "😌" },
+      { value: "bit", label: "Un peu stressé·e", emoji: "😬" },
+      { value: "very", label: "Très stressé·e", emoji: "😰" },
+      { value: "panic", label: "C'est la panique totale", emoji: "🫨" },
+    ],
+  },
+  {
+    kind: "single",
+    key: "load",
+    title: "Combien de chapitres dois-tu réviser en ce moment ?",
+    options: [
+      { value: "1-2", label: "1 ou 2", emoji: "📄" },
+      { value: "3-5", label: "3 à 5", emoji: "📚" },
+      { value: "6-10", label: "6 à 10", emoji: "🗂️" },
+      { value: "10+", label: "Plus de 10", emoji: "🏔️" },
+    ],
+  },
+  {
+    kind: "single",
     key: "minutes",
     title: "Combien de temps peux-tu réviser par jour ?",
     subtitle: "Sois honnête, on construit ton rythme là-dessus.",
@@ -81,6 +104,27 @@ const QUESTIONS: Question[] = [
       { value: "20", label: "20 minutes", emoji: "⏱️" },
       { value: "40", label: "40 minutes", emoji: "💪" },
       { value: "60", label: "1 heure ou plus", emoji: "🚀" },
+    ],
+  },
+  {
+    kind: "single",
+    key: "when",
+    title: "Quand préfères-tu réviser ?",
+    options: [
+      { value: "morning", label: "Le matin", emoji: "🌅" },
+      { value: "afternoon", label: "Après les cours", emoji: "🎒" },
+      { value: "evening", label: "Le soir", emoji: "🌙" },
+      { value: "weekend", label: "Surtout le week-end", emoji: "🛋️" },
+    ],
+  },
+  {
+    kind: "single",
+    key: "device",
+    title: "Tu révises plutôt sur…",
+    options: [
+      { value: "phone", label: "Mon téléphone", emoji: "📱" },
+      { value: "computer", label: "Mon ordinateur", emoji: "💻" },
+      { value: "both", label: "Les deux", emoji: "🔁" },
     ],
   },
   {
@@ -109,6 +153,13 @@ const QUESTIONS: Question[] = [
     ],
   },
   {
+    kind: "fact",
+    key: "fact-daily",
+    emoji: "⏱️",
+    title: "Un peu chaque jour vaut mieux que tout la veille.",
+    text: "Réviser par petites sessions régulières aide à retenir plus longtemps qu'une longue session de dernière minute. Revizuno te dit chaque jour quoi revoir, pour que chaque minute compte.",
+  },
+  {
     kind: "multi",
     key: "subjects",
     title: "Quelles matières veux-tu réviser ?",
@@ -126,6 +177,29 @@ const QUESTIONS: Question[] = [
       { value: "Autre", label: "Autre", emoji: "✨" },
     ],
   },
+  {
+    kind: "single",
+    key: "source",
+    title: "Comment as-tu connu Revizuno ?",
+    options: [
+      { value: "tiktok", label: "TikTok", emoji: "🎵" },
+      { value: "instagram", label: "Instagram", emoji: "📸" },
+      { value: "youtube", label: "YouTube", emoji: "▶️" },
+      { value: "friend", label: "Un·e ami·e", emoji: "🤝" },
+      { value: "search", label: "Google", emoji: "🔎" },
+      { value: "other", label: "Autre", emoji: "✨" },
+    ],
+  },
+  {
+    kind: "single",
+    key: "commit",
+    title: "Prêt·e à t'y mettre pendant 2 semaines ?",
+    subtitle: "C'est le temps qu'il faut pour sentir la différence.",
+    options: [
+      { value: "yes", label: "Oui, je m'engage", emoji: "💪" },
+      { value: "try", label: "Je vais essayer", emoji: "🙂" },
+    ],
+  },
 ];
 
 const LABELS: Record<string, Record<string, string>> = Object.fromEntries(
@@ -135,14 +209,41 @@ const LABELS: Record<string, Record<string, string>> = Object.fromEntries(
 const LOADING_STEPS = ["Analyse de tes réponses", "Choix des méthodes adaptées à ton profil", "Calcul de ton rythme de révision idéal", "Préparation de ton programme personnalisé"];
 
 type Answers = Record<string, string | string[]>;
+type Phase = "init" | "questions" | "loading" | "signup" | "sent" | "paywall";
+
+// Réponses gardées dans le navigateur entre le questionnaire public et l'inscription
+const STORAGE_KEY = "revizuno.onboarding";
+
+function readStored(): Answers | null {
+  try {
+    const raw = window.localStorage.getItem(STORAGE_KEY);
+    return raw ? (JSON.parse(raw) as Answers) : null;
+  } catch {
+    return null;
+  }
+}
+
+function writeStored(answers: Answers | null) {
+  try {
+    if (answers) window.localStorage.setItem(STORAGE_KEY, JSON.stringify(answers));
+    else window.localStorage.removeItem(STORAGE_KEY);
+  } catch {
+    // stockage indisponible (navigation privée) : les réponses passent aussi par le compte
+  }
+}
 
 export function OnboardingFlow({
+  mode,
+  initialAnswers,
   initialName,
   isPro,
   priceLabel,
   pricePeriod,
   limits,
 }: {
+  // public : avant l'inscription (/commencer) ; app : connecté (/onboarding)
+  mode: "public" | "app";
+  initialAnswers: Answers | null;
   initialName: string;
   isPro: boolean;
   priceLabel: string;
@@ -152,7 +253,10 @@ export function OnboardingFlow({
   const router = useRouter();
   const [index, setIndex] = useState(0);
   const [answers, setAnswers] = useState<Answers>(initialName ? { name: initialName } : {});
-  const [phase, setPhase] = useState<"questions" | "loading" | "paywall">("questions");
+  const [phase, setPhase] = useState<Phase>(mode === "app" ? "init" : "questions");
+  const [loadingMs, setLoadingMs] = useState(7200);
+  const [email, setEmail] = useState("");
+  const [signupBusy, setSignupBusy] = useState(false);
   const [progress, setProgress] = useState(0);
   const [checkout, setCheckout] = useState<"idle" | "busy">("idle");
   const [error, setError] = useState<string | null>(null);
@@ -180,6 +284,23 @@ export function OnboardingFlow({
       .eq("id", user.id);
   }
 
+  // Connecté : si les réponses ont été données avant l'inscription, on les reprend
+  useEffect(() => {
+    if (mode !== "app" || phase !== "init") return;
+    const stored = initialAnswers ?? readStored();
+    if (stored && Object.keys(stored).length >= 3) {
+      const merged = { ...stored, ...(stored.name ? {} : answers) };
+      setAnswers(merged);
+      save(merged);
+      writeStored(null);
+      setLoadingMs(2600);
+      setPhase("loading");
+    } else {
+      setPhase("questions");
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mode, phase, initialAnswers]);
+
   function next(update?: Answers) {
     const merged = { ...answers, ...update };
     setAnswers(merged);
@@ -187,21 +308,51 @@ export function OnboardingFlow({
       setIndex(index + 1);
       return;
     }
-    save(merged);
+    if (mode === "public") writeStored(merged);
+    else save(merged);
     setPhase("loading");
+  }
+
+  async function signUp(e: React.FormEvent) {
+    e.preventDefault();
+    const address = email.trim();
+    if (!address) return;
+    setSignupBusy(true);
+    setError(null);
+    writeStored(answers);
+    const { error: otpError } = await createClient().auth.signInWithOtp({
+      email: address,
+      options: {
+        emailRedirectTo: callbackUrl("/onboarding"),
+        shouldCreateUser: true,
+        // Gardées sur le compte : le lien peut être ouvert sur un autre appareil
+        data: { onboarding: answers },
+      },
+    });
+    setSignupBusy(false);
+    if (otpError) {
+      setError(readableAuthError(otpError.message, otpError.code));
+      return;
+    }
+    setPhase("sent");
   }
 
   // Préparation du programme (animation)
   useEffect(() => {
     if (phase !== "loading") return;
     const start = Date.now();
-    const total = 7200;
+    const total = loadingMs;
     const timer = setInterval(() => {
       const t = Math.min(1, (Date.now() - start) / total);
       // Progression irrégulière, plus naturelle
       setProgress(Math.round(100 * (t < 0.6 ? t * 1.15 : 0.69 + (t - 0.6) * 0.775)));
       if (t >= 1) {
         clearInterval(timer);
+        if (mode === "public") {
+          setPhase("signup");
+          burstConfetti(60);
+          return;
+        }
         if (isPro) {
           router.push("/dashboard");
           return;
@@ -211,19 +362,23 @@ export function OnboardingFlow({
       }
     }, 80);
     return () => clearInterval(timer);
-  }, [phase, isPro, router]);
+  }, [phase, isPro, router, mode, loadingMs]);
 
   const plan = useMemo(() => {
     const perWeek = minutes >= 40 ? 6 : 5;
     const subjects = (answers.subjects as string[] | undefined) ?? [];
     return {
-      rhythm: `${minutes >= 60 ? "1 h" : `${minutes} min`} par jour, ${perWeek} jours sur 7`,
+      rhythm:
+        `${minutes >= 60 ? "1 h" : `${minutes} min`} par jour, ${perWeek} jours sur 7` +
+        ({ morning: ", le matin", afternoon: ", après les cours", evening: ", le soir", weekend: ", avec un peu plus le week-end" }[answers.when as string] ?? ""),
       goal: LABELS.goal?.[answers.goal as string] ?? "Progresser",
       exam: LABELS.exam?.[answers.exam as string] ?? "",
       subjects: subjects.length ? subjects.slice(0, 4).join(", ") + (subjects.length > 4 ? "…" : "") : "Tes matières",
       method:
         answers.struggle === "forget"
           ? "Répétition espacée : Revi te fait revoir chaque notion juste avant que tu l'oublies."
+          : answers.struggle === "stress" || answers.stress === "very" || answers.stress === "panic"
+            ? "Des quiz d'entraînement réguliers : tu arrives à l'examen en ayant déjà répondu à ce genre de questions."
           : answers.struggle === "procrastination"
             ? "Sessions courtes planifiées dans ton agenda, avec rappels, pour ne plus repousser."
             : answers.struggle === "start"
@@ -252,6 +407,103 @@ export function OnboardingFlow({
     window.location.href = data.url;
   }
 
+  const planCard = (
+    <section className="card stack ob-plan">
+      <h2>Ton programme Revizuno</h2>
+      <ul>
+        <li>
+          <span>🎯</span>
+          <span>
+            <strong>Objectif</strong> {plan.goal}
+            {plan.exam ? ` · ${plan.exam.toLowerCase()}` : ""}
+          </span>
+        </li>
+        <li>
+          <span>⏱️</span>
+          <span>
+            <strong>Rythme</strong> {plan.rhythm}
+          </span>
+        </li>
+        <li>
+          <span>📚</span>
+          <span>
+            <strong>Matières</strong> {plan.subjects}
+          </span>
+        </li>
+        <li>
+          <span>🧠</span>
+          <span>
+            <strong>Méthode</strong> {plan.method}
+          </span>
+        </li>
+      </ul>
+    </section>
+  );
+
+  if (phase === "init") {
+    return (
+      <div className="ob-center">
+        <div className="spinner" aria-hidden="true">
+          <span />
+          <span />
+          <span />
+        </div>
+      </div>
+    );
+  }
+
+  if (phase === "signup") {
+    return (
+      <div className="paywall fade-up">
+        <div className="stack" style={{ gap: 8, textAlign: "center", justifyItems: "center" }}>
+          <span className="pill">Programme prêt</span>
+          <h1 className="ob-title">{name ? `${name}, ton programme est prêt !` : "Ton programme est prêt !"}</h1>
+          <p className="muted">Crée ton compte gratuit pour le débloquer et commencer à réviser.</p>
+        </div>
+        {planCard}
+        <form className="card stack ob-signup" onSubmit={signUp}>
+          <label htmlFor="ob-email">
+            Ton adresse e-mail
+            <input
+              id="ob-email"
+              type="email"
+              autoComplete="email"
+              required
+              placeholder="ton@email.ch"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+            />
+          </label>
+          <button type="submit" className="btn btn-primary" disabled={signupBusy}>
+            {signupBusy ? "Envoi…" : "Créer mon compte gratuit"}
+          </button>
+          <p className="muted small" style={{ textAlign: "center" }}>
+            Pas de mot de passe : on t'envoie un lien de connexion par e-mail.
+          </p>
+          {error && <p className="notice error">{error}</p>}
+        </form>
+        <p className="muted small" style={{ textAlign: "center" }}>
+          Déjà un compte ? <a href="/login">Se connecter</a> · <a href="/confidentialite">Confidentialité</a>
+        </p>
+      </div>
+    );
+  }
+
+  if (phase === "sent") {
+    return (
+      <div className="ob-center fade-up">
+        <span className="ob-emoji">📬</span>
+        <h1 className="ob-title">Vérifie ta boîte mail</h1>
+        <p className="muted" style={{ maxWidth: 440 }}>
+          On a envoyé un lien à <strong>{email.trim()}</strong>. Clique dessus pour accéder à ton programme. Pense à regarder dans les spams.
+        </p>
+        <button type="button" className="link-btn" onClick={() => setPhase("signup")}>
+          Changer d'adresse
+        </button>
+      </div>
+    );
+  }
+
   if (phase === "loading") {
     const stepDone = Math.floor((progress / 100) * LOADING_STEPS.length);
     return (
@@ -259,7 +511,9 @@ export function OnboardingFlow({
         <div className="ob-ring" style={{ "--p": progress } as React.CSSProperties} role="progressbar" aria-valuenow={progress} aria-valuemin={0} aria-valuemax={100}>
           <span>{progress}%</span>
         </div>
-        <h1 className="ob-title">{name ? `${name}, on prépare ton programme…` : "On prépare ton programme…"}</h1>
+        <h1 className="ob-title">
+          {loadingMs < 5000 ? "On finalise ton programme…" : name ? `${name}, on prépare ton programme…` : "On prépare ton programme…"}
+        </h1>
         <ul className="ob-steps">
           {LOADING_STEPS.map((s, i) => (
             <li key={s} className={i < stepDone ? "done" : i === stepDone ? "current" : ""}>
@@ -289,36 +543,7 @@ export function OnboardingFlow({
           <p className="muted">Débloque Revizuno Pro pour le suivre sans limite.</p>
         </div>
 
-        <section className="card stack ob-plan">
-          <h2>Ton programme Revizuno</h2>
-          <ul>
-            <li>
-              <span>🎯</span>
-              <span>
-                <strong>Objectif</strong> {plan.goal}
-                {plan.exam ? ` · ${plan.exam.toLowerCase()}` : ""}
-              </span>
-            </li>
-            <li>
-              <span>⏱️</span>
-              <span>
-                <strong>Rythme</strong> {plan.rhythm}
-              </span>
-            </li>
-            <li>
-              <span>📚</span>
-              <span>
-                <strong>Matières</strong> {plan.subjects}
-              </span>
-            </li>
-            <li>
-              <span>🧠</span>
-              <span>
-                <strong>Méthode</strong> {plan.method}
-              </span>
-            </li>
-          </ul>
-        </section>
+        {planCard}
 
         <h2 className="pw-h2">Choisis ton plan.</h2>
         <div className="pw-plan on" aria-label="Revizuno Pro, sélectionné">

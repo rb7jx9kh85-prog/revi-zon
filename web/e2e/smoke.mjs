@@ -50,6 +50,27 @@ async function prime(context) {
   await p.close();
 }
 
+// Répond à toutes les questions du questionnaire d'accueil, jusqu'à `until`
+async function answerAll(page, until) {
+  let screens = 0;
+  for (let i = 0; i < 30 && !(await page.locator(until).count()); i++) {
+    if (await page.locator("#ob-name").count()) {
+      await page.fill("#ob-name", "E2E");
+      await page.click('button:has-text("Continuer")');
+    } else if (await page.locator('button:has-text("Super, on continue")').count()) {
+      await page.click('button:has-text("Super, on continue")');
+    } else if (await page.locator(".ob-options.multi").count()) {
+      await page.locator(".ob-option").first().click();
+      await page.click('button:has-text("Continuer")');
+    } else {
+      await page.locator(".ob-option").first().click();
+    }
+    screens += 1;
+    await page.waitForTimeout(450);
+  }
+  return screens;
+}
+
 const browser = await chromium.launch();
 try {
   const anon = await browser.newContext();
@@ -63,8 +84,18 @@ try {
   await p0.goto(BASE + "/dashboard");
   log("dashboard protégé", p0.url().includes("/login"), p0.url());
   await p0.goto(BASE + "/");
-  const cta = await p0.locator('a[href="/dashboard"]').first().getAttribute("href", { timeout: 5000 }).catch(() => null);
-  log("bouton landing vers l'app", cta === "/dashboard", cta);
+  const cta = await p0.locator('a[href="/commencer"]').first().getAttribute("href", { timeout: 5000 }).catch(() => null);
+  log("bouton landing vers le questionnaire", cta === "/commencer", cta);
+
+  // Questionnaire public, avant l'inscription
+  await p0.goto(BASE + "/commencer", { waitUntil: "networkidle" });
+  await p0.waitForSelector(".ob-q", { timeout: 15000 }).catch(() => {});
+  const publicScreens = await answerAll(p0, ".ob-signup, .ob-center");
+  log("questionnaire avant inscription", publicScreens >= 15, `${publicScreens} écrans`);
+  await p0.waitForSelector(".ob-signup #ob-email", { timeout: 20000 }).then(
+    async () => log("préparation puis création de compte", true, await p0.locator(".paywall .ob-title").innerText()),
+    () => log("préparation puis création de compte", false),
+  );
 
   const ctx = await browser.newContext({ viewport: { width: 1280, height: 900 } });
   await prime(ctx);
@@ -113,23 +144,9 @@ try {
     await sb.from("profiles").update({ onboarding_completed: false }).eq("id", auth.user.id);
     await page.goto(BASE + "/dashboard", { waitUntil: "networkidle" });
     log("redirection vers le questionnaire", page.url().includes("/onboarding"), page.url());
-    let questions = 0;
-    for (let i = 0; i < 20 && !(await page.locator(".paywall, .ob-center").count()); i++) {
-      if (await page.locator("#ob-name").count()) {
-        await page.fill("#ob-name", "E2E");
-        await page.click('button:has-text("Continuer")');
-      } else if (await page.locator('button:has-text("Super, on continue")').count()) {
-        await page.click('button:has-text("Super, on continue")');
-      } else if (await page.locator(".ob-options.multi").count()) {
-        await page.locator(".ob-option").first().click();
-        await page.click('button:has-text("Continuer")');
-      } else {
-        await page.locator(".ob-option").first().click();
-      }
-      questions += 1;
-      await page.waitForTimeout(450);
-    }
-    log("questionnaire", questions >= 8, `${questions} écrans`);
+    await page.waitForSelector(".ob-q, .paywall", { timeout: 15000 }).catch(() => {});
+    const questions = await answerAll(page, ".paywall, .ob-center");
+    log("questionnaire (connecté)", questions >= 15, `${questions} écrans`);
     const loading = await page.locator(".ob-ring").count();
     await page.waitForSelector(".paywall", { timeout: 20000 }).then(
       async () => log("chargement puis offre Pro", loading > 0, (await page.locator(".paywall .ob-title").innerText()) + " · " + (await page.locator(".pw-perday").innerText().catch(() => "")).replace(/\s+/g, " ")),

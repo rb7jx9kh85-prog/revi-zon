@@ -20,6 +20,10 @@ export default async function OnboardingPage() {
   const profile = profileRes.data as { display_name: string | null; plan: string; onboarding_completed: boolean } | null;
   if (profile?.onboarding_completed) redirect("/dashboard");
 
+  // Réponses données avant l'inscription (/commencer), gardées sur le compte
+  const fromMeta = (user.user_metadata as { onboarding?: unknown } | null)?.onboarding;
+  const answersFromSignup = fromMeta && typeof fromMeta === "object" ? (fromMeta as Record<string, string | string[]>) : null;
+
   const limits = (limitsRes.data ?? []) as { plan: string; max_documents_per_month: number; max_file_size_mb: number }[];
   const free = limits.find((l) => l.plan === "free");
   const pro = limits.find((l) => l.plan === "pro");
@@ -31,6 +35,8 @@ export default async function OnboardingPage() {
         Revizuno
       </a>
       <OnboardingFlow
+        mode="app"
+        initialAnswers={answersFromSignup}
         initialName={profile?.display_name ?? ""}
         isPro={profile?.plan === "pro"}
         priceLabel={PRO_PRICE_LABEL}
