@@ -83,7 +83,7 @@ export default async function PricingPage({ searchParams }: { searchParams: Prom
               {plan === "free" ? "Ton plan actuel" : "Aller à mes cours"}
             </Link>
           ) : (
-            <Link href="/login?next=/dashboard/new" className="btn btn-ghost">
+            <Link href="/commencer" className="btn btn-ghost">
               Créer mon compte
             </Link>
           )}
