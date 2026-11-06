@@ -598,3 +598,14 @@ textarea:focus { border-color: var(--fg); outline: none; }
 
 /* Inscription à la fin du questionnaire */
 .ob-signup input { font-size: 1.1rem; padding: 15px 16px; border: 2px solid var(--fg); background: var(--card); }
+
+/* Quatre offres côte à côte */
+.plans.plans-4 { max-width: 1180px; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 18px; }
+.plans-4 .price { font-size: 2.1rem; }
+
+/* Choix de l'offre après le questionnaire */
+.pw-plans { display: grid; gap: 22px; }
+.pw-plans .pw-plan { width: 100%; text-align: left; font: inherit; color: var(--fg); cursor: pointer; transition: border-color 0.15s, transform 0.15s; }
+.pw-plans .pw-plan:not(.on):hover { border-color: var(--fg); transform: translateY(-2px); }
+.pw-plan:not(.on) .pw-radio { background: transparent; border: 2px solid var(--line); }
+.pw-save { margin-left: 10px; padding: 3px 9px; border-radius: 99px; background: var(--accent-4); color: var(--on-accent); font: 800 0.8rem var(--f-body), sans-serif; vertical-align: 3px; }

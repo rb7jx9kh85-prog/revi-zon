@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { BillingButton } from "@/components/billing-button";
-import { PRO_PRICE_LABEL, PRO_PRICE_PERIOD } from "@/lib/pricing";
+import { visitorCurrency } from "@/lib/currency";
+import { PLANS, formatPrice, planMath } from "@/lib/pricing";
 import { SiteFooter } from "@/components/site-footer";
 import { createClient } from "@/lib/supabase/server";
 
@@ -40,11 +41,12 @@ export default async function PricingPage({ searchParams }: { searchParams: Prom
     if (l && l.length) limits = l as Limits[];
     plan = (p?.plan as string | undefined) ?? "free";
   }
+  const currency = await visitorCurrency();
   const free = limits.find((l) => l.plan === "free") ?? FALLBACK[0];
   const pro = limits.find((l) => l.plan === "pro") ?? FALLBACK[1];
 
   return (
-    <main className="page">
+    <main className="page wide">
       <header className="topbar">
         <a href="/" className="brand">
           <img src="/logo-mark.png" alt="" width={40} height={36} />
@@ -66,11 +68,11 @@ export default async function PricingPage({ searchParams }: { searchParams: Prom
 
       {canceled && <p className="notice">Paiement annulé : aucun montant n'a été débité.</p>}
 
-      <section className="plans">
+      <section className="plans plans-4">
         <article className="card stack plan">
           <h2>Gratuit</h2>
           <p className="price">
-            0 CHF <small>pour toujours</small>
+            {formatPrice(0, currency)} <small>pour toujours</small>
           </p>
           <ul className="plan-list">
             <li><Check />{free.max_documents_per_month} cours importés par mois</li>
@@ -89,30 +91,46 @@ export default async function PricingPage({ searchParams }: { searchParams: Prom
           )}
         </article>
 
-        <article className="card stack plan pro">
-          <span className="plan-badge">Recommandé</span>
-          <h2>Pro</h2>
-          <p className="price">
-            {PRO_PRICE_LABEL} <small>{PRO_PRICE_PERIOD}</small>
-          </p>
-          <ul className="plan-list">
-            <li><Check />{pro.max_documents_per_month} cours importés par mois</li>
-            <li><Check />{pro.max_generations_per_month} générations d'exercices par mois</li>
-            <li><Check />Fichiers jusqu'à {pro.max_file_size_mb} Mo</li>
-            <li><Check />Tout le plan gratuit, sans attendre le mois suivant</li>
-          </ul>
-          {!user ? (
-            <Link href="/login?next=/pricing" className="btn btn-primary">
-              Passer à Pro
-            </Link>
-          ) : plan === "pro" ? (
-            <BillingButton action="portal" label="Gérer mon abonnement" />
-          ) : (
-            <BillingButton action="checkout" label="Passer à Pro" />
-          )}
-          <p className="muted small">Paiement sécurisé par Stripe. Carte, Apple Pay ou Google Pay.</p>
-        </article>
+        {PLANS.map((p) => {
+          const m = planMath(p, currency);
+          return (
+            <article key={p.id} className={`card stack plan ${p.recommended ? "pro" : ""}`}>
+              {p.recommended ? <span className="plan-badge">Offre recommandée</span> : null}
+              <h2>{p.label}</h2>
+              <p className="price">
+                {m.price} <small>/ {p.period}</small>
+              </p>
+              <p className={p.recommended ? "" : "muted"}>
+                {p.months > 1 ? (
+                  <>
+                    soit <strong>{m.perMonth} par mois</strong> · {m.saving} % d'économie
+                  </>
+                ) : (
+                  "Sans engagement, résiliable à tout moment"
+                )}
+              </p>
+              <ul className="plan-list">
+                <li><Check />{pro.max_documents_per_month} cours importés par mois</li>
+                <li><Check />{pro.max_generations_per_month} générations d'exercices par mois</li>
+                <li><Check />Fichiers jusqu'à {pro.max_file_size_mb} Mo</li>
+              </ul>
+              {!user ? (
+                <Link href="/commencer" className={p.recommended ? "btn btn-primary" : "btn btn-ghost"}>
+                  Commencer
+                </Link>
+              ) : plan === "pro" ? (
+                <BillingButton action="portal" label="Gérer mon abonnement" className="btn btn-ghost" />
+              ) : (
+                <BillingButton action="checkout" plan={p.id} currency={currency} label={`Choisir ${p.short}`} className={p.recommended ? "btn btn-primary" : "btn btn-ghost"} />
+              )}
+            </article>
+          );
+        })}
       </section>
+      <p className="muted small" style={{ textAlign: "center" }}>
+        Prix TTC en {currency === "chf" ? "francs suisses" : "euros"}. Paiement sécurisé par Stripe : carte, Apple Pay ou Google Pay. Renouvellement
+        automatique à la fin de chaque période, résiliable à tout moment depuis ton tableau de bord.
+      </p>
       <SiteFooter />
     </main>
   );

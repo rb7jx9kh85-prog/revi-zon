@@ -57,6 +57,7 @@ async function syncSubscription(sub: Stripe.Subscription, fallbackUserId?: strin
       subscription_status: sub.status,
       subscription_period_end: periodEnd ? new Date(periodEnd * 1000).toISOString() : null,
       subscription_cancel_at_period_end: Boolean(sub.cancel_at_period_end),
+      subscription_plan: sub.items?.data?.[0]?.price?.lookup_key ?? sub.items?.data?.[0]?.price?.id ?? null,
     })
     .eq("id", userId);
   if (error) throw new Error(`Mise à jour du profil : ${error.message}`);

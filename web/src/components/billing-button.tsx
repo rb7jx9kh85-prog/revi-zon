@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import type { Currency, PlanId } from "@/lib/pricing";
 import { createClient } from "@/lib/supabase/client";
 
 async function readError(error: unknown): Promise<string> {
@@ -21,10 +22,14 @@ export function BillingButton({
   action,
   label,
   className = "btn btn-primary",
+  plan,
+  currency,
 }: {
   action: "checkout" | "portal";
   label: string;
   className?: string;
+  plan?: PlanId;
+  currency?: Currency;
 }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -32,7 +37,7 @@ export function BillingButton({
   async function go() {
     setBusy(true);
     setError(null);
-    const { data, error: fnError } = await createClient().functions.invoke("billing", { body: { action } });
+    const { data, error: fnError } = await createClient().functions.invoke("billing", { body: { action, plan, currency } });
     if (fnError || !data?.url) {
       setError(fnError ? await readError(fnError) : "Le paiement n'est pas disponible pour le moment.");
       setBusy(false);

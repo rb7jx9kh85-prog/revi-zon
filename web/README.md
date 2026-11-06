@@ -58,18 +58,23 @@ Pas besoin de redéployer : les fonctions lisent les secrets à chaque appel.
 
 ### 3. Paiement Stripe
 
-1. Dans Stripe (mode test pour commencer) : **Product catalog > Add product** « Revizuno Pro », prix récurrent mensuel (ex. 9.90 CHF). Copier l'identifiant du prix (`price_...`).
-2. **Developers > API keys** : copier la clé secrète (`sk_test_...`).
-3. **Developers > Webhooks > Add endpoint** :
-   - URL : `https://czspzlnqmitrcyweknwm.supabase.co/functions/v1/stripe-webhook`
-   - Événements : `checkout.session.completed`, `customer.subscription.created`, `customer.subscription.updated`, `customer.subscription.deleted`
-   - Copier le « Signing secret » (`whsec_...`).
-4. **Settings > Billing > Customer portal** : activer le portail (résiliation, changement de carte).
-5. Supabase > Edge Functions > Secrets : `STRIPE_SECRET_KEY`, `STRIPE_PRICE_ID`, `STRIPE_WEBHOOK_SECRET`
-   (optionnel : `APP_URL` = adresse du site, sinon l'origine du navigateur est utilisée).
-6. Vercel : `NEXT_PUBLIC_PRO_PRICE_LABEL` = le prix affiché (ex. `9.90 CHF`), identique au prix Stripe.
+Trois offres Pro, chacune en EUR (France et ailleurs) et en CHF (Suisse, Liechtenstein) :
 
-Carte de test Stripe : `4242 4242 4242 4242`, date future, CVC quelconque.
+| Offre | Prix | Lookup key EUR | Lookup key CHF |
+|---|---|---|---|
+| Pro mensuel | 9,99 / mois | `revizuno_pro_monthly_eur` | `revizuno_pro_monthly_chf` |
+| Pro semestre (recommandée) | 34,99 / 6 mois | `revizuno_pro_semester_eur` | `revizuno_pro_semester_chf` |
+| Pro annuel | 59,99 / an | `revizuno_pro_annual_eur` | `revizuno_pro_annual_chf` |
+
+- Un produit « Revizuno Pro » (code fiscal `txcd_10103000`), six prix récurrents TTC (`tax_behavior: inclusive`)
+  retrouvés par leur lookup key : aucun identifiant de prix à recopier.
+- La devise est choisie selon le pays du visiteur (en-tête `x-vercel-ip-country`), voir `src/lib/currency.ts`.
+  Les montants affichés sont dans `src/lib/pricing.ts` et doivent correspondre aux prix Stripe.
+- Webhook vers `https://czspzlnqmitrcyweknwm.supabase.co/functions/v1/stripe-webhook`, événements
+  `checkout.session.completed`, `customer.subscription.created`, `customer.subscription.updated`, `customer.subscription.deleted`.
+- Portail client activé (résiliation, changement de carte, changement d'offre).
+- Supabase > Edge Functions > Secrets : `STRIPE_SECRET_KEY` (`sk_live_…` en production) et `STRIPE_WEBHOOK_SECRET` (`whsec_…`).
+  `APP_URL` est optionnel.
 
 ### 4. Vercel
 
