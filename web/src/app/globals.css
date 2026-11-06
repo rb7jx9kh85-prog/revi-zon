@@ -504,10 +504,6 @@ textarea:focus { border-color: var(--fg); outline: none; }
 .check:hover { transform: scale(1.1); }
 .check.on { background: var(--accent-4); }
 
-/* Bouton « arrive bientôt » */
-.btn-soon:disabled { opacity: 0.65; cursor: not-allowed; }
-.soon-pill { padding: 3px 8px; border-radius: 99px; border: 1.5px solid var(--fg); background: var(--accent); color: var(--on-accent); font: 700 0.72rem var(--f-body), sans-serif; letter-spacing: 0.04em; text-transform: uppercase; }
-
 /* ---------- Pages légales et pied de page ---------- */
 .site-footer { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; width: 100%; padding-top: 18px; margin-top: 8px; border-top: 1.5px solid var(--line); color: var(--muted); font-size: 0.88rem; }
 .site-footer nav { display: flex; gap: 14px; flex-wrap: wrap; }

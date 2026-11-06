@@ -16,3 +16,13 @@ export function readableAuthError(message: string, code?: string) {
   if (/invalid.*email/i.test(message)) return "Cette adresse e-mail n'est pas valide.";
   return "La connexion a échoué. Réessaie dans un instant.";
 }
+
+// Connexion avec Google : redirige vers Google, puis revient sur `next`.
+export async function signInWithGoogle(next: string): Promise<string | null> {
+  const { createClient } = await import("@/lib/supabase/client");
+  const { error } = await createClient().auth.signInWithOAuth({
+    provider: "google",
+    options: { redirectTo: callbackUrl(next) },
+  });
+  return error ? "La connexion avec Google a échoué. Réessaie ou utilise ton adresse e-mail." : null;
+}

@@ -2,7 +2,8 @@
 
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
-import { callbackUrl, readableAuthError } from "@/lib/auth-client";
+import { callbackUrl, readableAuthError, signInWithGoogle } from "@/lib/auth-client";
+import { GoogleButton } from "./google-button";
 import { burstConfetti } from "@/lib/confetti";
 import { readFunctionError } from "@/lib/fn-error";
 import { DEFAULT_PLAN, PLANS, planMath, type Currency, type PlanId } from "@/lib/pricing";
@@ -458,6 +459,22 @@ export function OnboardingFlow({
         </div>
         {planCard}
         <form className="card stack ob-signup" onSubmit={signUp}>
+          <GoogleButton
+            disabled={signupBusy}
+            label="Créer mon compte avec Google"
+            onClick={async () => {
+              setSignupBusy(true);
+              setError(null);
+              // Les réponses restent dans le navigateur pendant l'aller-retour chez Google
+              writeStored(answers);
+              const message = await signInWithGoogle("/onboarding");
+              if (message) {
+                setError(message);
+                setSignupBusy(false);
+              }
+            }}
+          />
+          <div className="divider">ou par e-mail</div>
           <label htmlFor="ob-email">
             Ton adresse e-mail
             <input
@@ -474,7 +491,7 @@ export function OnboardingFlow({
             {signupBusy ? "Envoi…" : "Créer mon compte gratuit"}
           </button>
           <p className="muted small" style={{ textAlign: "center" }}>
-            Pas de mot de passe : on t'envoie un lien de connexion par e-mail.
+            Par e-mail, pas de mot de passe : on t'envoie un lien de connexion.
           </p>
           {error && <p className="notice error">{error}</p>}
         </form>
