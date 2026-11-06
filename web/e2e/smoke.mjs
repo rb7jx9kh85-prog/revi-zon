@@ -92,9 +92,14 @@ try {
   await p0.waitForSelector(".ob-q", { timeout: 15000 }).catch(() => {});
   const publicScreens = await answerAll(p0, ".ob-signup, .ob-center");
   log("questionnaire avant inscription", publicScreens >= 15, `${publicScreens} écrans`);
-  await p0.waitForSelector(".ob-signup #ob-email", { timeout: 20000 }).then(
-    async () => log("préparation puis création de compte", true, await p0.locator(".paywall .ob-title").innerText()),
-    () => log("préparation puis création de compte", false),
+  await p0.waitForSelector(".paywall .pw-plans", { timeout: 20000 }).then(
+    async () => log("préparation puis choix de l'offre (sans compte)", true, await p0.locator(".paywall .ob-title").innerText()),
+    () => log("préparation puis choix de l'offre (sans compte)", false),
+  );
+  await p0.locator(".pw-cta").first().click();
+  await p0.waitForSelector(".ob-signup #ob-email", { timeout: 10000 }).then(
+    async () => log("offre choisie puis création de compte", true, (await p0.locator(".paywall .muted").first().innerText()).slice(0, 120)),
+    () => log("offre choisie puis création de compte", false),
   );
 
   const ctx = await browser.newContext({ viewport: { width: 1280, height: 900 } });

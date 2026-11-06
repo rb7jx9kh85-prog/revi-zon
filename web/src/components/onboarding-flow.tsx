@@ -211,7 +211,8 @@ const LABELS: Record<string, Record<string, string>> = Object.fromEntries(
 const LOADING_STEPS = ["Analyse de tes réponses", "Choix des méthodes adaptées à ton profil", "Calcul de ton rythme de révision idéal", "Préparation de ton programme personnalisé"];
 
 type Answers = Record<string, string | string[]>;
-type Phase = "init" | "questions" | "loading" | "signup" | "sent" | "paywall";
+type Phase = "init" | "questions" | "loading" | "signup" | "sent" | "paywall" | "redirect";
+type Choice = PlanId | "free";
 
 // Réponses gardées dans le navigateur entre le questionnaire public et l'inscription
 const STORAGE_KEY = "revizuno.onboarding";
@@ -258,6 +259,8 @@ export function OnboardingFlow({
   const [email, setEmail] = useState("");
   const [signupBusy, setSignupBusy] = useState(false);
   const [planId, setPlanId] = useState<PlanId>(DEFAULT_PLAN);
+  // Offre choisie avant la création du compte (parcours public)
+  const [choice, setChoice] = useState<Choice | null>(null);
   const [progress, setProgress] = useState(0);
   const [checkout, setCheckout] = useState<"idle" | "busy">("idle");
   const [error, setError] = useState<string | null>(null);
@@ -292,10 +295,22 @@ export function OnboardingFlow({
     if (stored && Object.keys(stored).length >= 3) {
       const merged = { ...stored, ...(stored.name ? {} : answers) };
       setAnswers(merged);
-      save(merged);
       writeStored(null);
-      setLoadingMs(2600);
-      setPhase("loading");
+      const chosen = merged.plan_choice as string | undefined;
+      const chosenCurrency = merged.plan_currency === "chf" || merged.plan_currency === "eur" ? (merged.plan_currency as Currency) : currency;
+      // Offre déjà choisie avant l'inscription : paiement directement (ou tableau de bord si gratuit)
+      if (chosen === "free" || (chosen && isPro)) {
+        setPhase("redirect");
+        save(merged).finally(() => router.push("/dashboard"));
+      } else if (chosen && PLANS.some((p) => p.id === chosen)) {
+        setPlanId(chosen as PlanId);
+        setPhase("redirect");
+        save(merged).finally(() => goPro(chosen as PlanId, chosenCurrency));
+      } else {
+        save(merged);
+        setLoadingMs(2600);
+        setPhase("loading");
+      }
     } else {
       setPhase("questions");
     }
@@ -314,20 +329,33 @@ export function OnboardingFlow({
     setPhase("loading");
   }
 
+  function answersWithChoice(): Answers {
+    return choice ? { ...answers, plan_choice: choice, plan_currency: currency } : answers;
+  }
+
+  // Parcours public : l'offre est choisie avant la création du compte
+  function choose(c: Choice) {
+    setChoice(c);
+    setError(null);
+    setPhase("signup");
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
   async function signUp(e: React.FormEvent) {
     e.preventDefault();
     const address = email.trim();
     if (!address) return;
     setSignupBusy(true);
     setError(null);
-    writeStored(answers);
+    const withChoice = answersWithChoice();
+    writeStored(withChoice);
     const { error: otpError } = await createClient().auth.signInWithOtp({
       email: address,
       options: {
         emailRedirectTo: callbackUrl("/onboarding"),
         shouldCreateUser: true,
         // Gardées sur le compte : le lien peut être ouvert sur un autre appareil
-        data: { onboarding: answers },
+        data: { onboarding: withChoice },
       },
     });
     setSignupBusy(false);
@@ -349,12 +377,7 @@ export function OnboardingFlow({
       setProgress(Math.round(100 * (t < 0.6 ? t * 1.15 : 0.69 + (t - 0.6) * 0.775)));
       if (t >= 1) {
         clearInterval(timer);
-        if (mode === "public") {
-          setPhase("signup");
-          burstConfetti(60);
-          return;
-        }
-        if (isPro) {
+        if (mode === "app" && isPro) {
           router.push("/dashboard");
           return;
         }
@@ -392,13 +415,18 @@ export function OnboardingFlow({
 
   const selected = PLANS.find((p) => p.id === planId) ?? PLANS[0];
 
-  async function goPro() {
+  async function goPro(plan: PlanId = planId, cur: Currency = currency) {
+    if (mode === "public") {
+      choose(plan);
+      return;
+    }
     setCheckout("busy");
     setError(null);
-    const { data, error: fnError } = await createClient().functions.invoke("billing", { body: { action: "checkout", plan: planId, currency } });
+    const { data, error: fnError } = await createClient().functions.invoke("billing", { body: { action: "checkout", plan, currency: cur } });
     if (fnError || !data?.url) {
       setError(fnError ? await readFunctionError(fnError, "Le paiement n'est pas disponible pour le moment.") : "Le paiement n'est pas disponible pour le moment.");
       setCheckout("idle");
+      setPhase("paywall");
       return;
     }
     window.location.href = data.url;
@@ -449,15 +477,34 @@ export function OnboardingFlow({
     );
   }
 
+  if (phase === "redirect") {
+    return (
+      <div className="ob-center fade-up">
+        <div className="spinner" aria-hidden="true">
+          <span />
+          <span />
+          <span />
+        </div>
+        <h1 className="ob-title">{checkout === "busy" ? "Ouverture du paiement sécurisé…" : "On prépare ton espace…"}</h1>
+      </div>
+    );
+  }
+
   if (phase === "signup") {
     return (
       <div className="paywall fade-up">
         <div className="stack" style={{ gap: 8, textAlign: "center", justifyItems: "center" }}>
-          <span className="pill">Programme prêt</span>
-          <h1 className="ob-title">{name ? `${name}, ton programme est prêt !` : "Ton programme est prêt !"}</h1>
-          <p className="muted">Crée ton compte gratuit pour le débloquer et commencer à réviser.</p>
+          <span className="pill">Dernière étape</span>
+          <h1 className="ob-title">Crée ton compte</h1>
+          <p className="muted">
+            {choice && choice !== "free"
+              ? `Pour activer ${PLANS.find((p) => p.id === choice)?.label ?? "Pro"} : tu passes ensuite directement au paiement sécurisé.`
+              : "Pour retrouver ton programme et commencer à réviser gratuitement."}
+          </p>
+          <button type="button" className="link-btn small" onClick={() => setPhase("paywall")}>
+            ← Changer d'offre
+          </button>
         </div>
-        {planCard}
         <form className="card stack ob-signup" onSubmit={signUp}>
           <GoogleButton
             disabled={signupBusy}
@@ -465,8 +512,8 @@ export function OnboardingFlow({
             onClick={async () => {
               setSignupBusy(true);
               setError(null);
-              // Les réponses restent dans le navigateur pendant l'aller-retour chez Google
-              writeStored(answers);
+              // Réponses et offre choisie restent dans le navigateur pendant l'aller-retour chez Google
+              writeStored(answersWithChoice());
               const message = await signInWithGoogle("/onboarding");
               if (message) {
                 setError(message);
@@ -595,7 +642,7 @@ export function OnboardingFlow({
           })}
         </div>
 
-        <button type="button" className="pw-cta" onClick={goPro} disabled={checkout === "busy"}>
+        <button type="button" className="pw-cta" onClick={() => goPro()} disabled={checkout === "busy"}>
           {checkout === "busy" ? "Ouverture du paiement…" : `Continuer avec ${selected.label}`}
         </button>
         {error && <p className="notice error">{error}</p>}
@@ -651,11 +698,11 @@ export function OnboardingFlow({
           ))}
         </div>
 
-        <button type="button" className="pw-cta" onClick={goPro} disabled={checkout === "busy"}>
+        <button type="button" className="pw-cta" onClick={() => goPro()} disabled={checkout === "busy"}>
           {checkout === "busy" ? "Ouverture du paiement…" : "Passer à Pro"}
         </button>
 
-        <button type="button" className="pw-skip" onClick={() => router.push("/dashboard")}>
+        <button type="button" className="pw-skip" onClick={() => (mode === "public" ? choose("free") : router.push("/dashboard"))}>
           Continuer avec la version gratuite
         </button>
       </div>
