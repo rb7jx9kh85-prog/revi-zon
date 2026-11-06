@@ -461,13 +461,11 @@ section{padding-block:clamp(70px,10vw,124px)}
 .rv-av span{width:100%;height:100%;border-radius:50%;display:grid;place-items:center;background:var(--card-2);border:2px solid var(--bg-2);font:800 .9rem/1 var(--f-display)}
 .rv-name{font-weight:700;font-size:.95rem;line-height:1.2}
 .rv-name small{display:block;color:var(--muted);font-weight:500;font-size:.8rem}
-.rv-ex{margin-left:auto;font:700 .65rem/1 var(--f-body);letter-spacing:.08em;text-transform:uppercase;color:var(--muted);border:1px dashed var(--muted);border-radius:6px;padding:4px 6px}
-.review p{font-size:.95rem;line-height:1.45}
-.rv-foot{display:flex;align-items:center;gap:16px;color:var(--muted);font-size:.84rem;font-weight:600}
-.rv-foot span{display:inline-flex;align-items:center;gap:6px}
-.rv-foot svg{width:17px;height:17px}
-.rv-foot .like svg{color:var(--accent-text)}
-.rv-foot .when{margin-left:auto}
+.rv-stars{margin-left:auto;display:inline-flex;gap:2px;vertical-align:-3px}
+.rv-stars svg{width:16px;height:16px;fill:none;stroke:var(--muted);stroke-width:1.6;stroke-linejoin:round}
+.rv-stars svg.on{fill:var(--accent);stroke:var(--fg)}
+#reviews-sub .rv-stars{margin:0 6px 0 0}
+#reviews-sub .rv-stars svg{width:18px;height:18px}
 
 /* ---------- 6. ANYWHERE ---------- */
 .devices{position:relative;height:clamp(250px,34vw,380px);margin-bottom:clamp(30px,4vw,50px);container-type:inline-size}
@@ -830,7 +828,7 @@ footer a:hover{color:var(--fg)}
       <div class="sec-head center">
         <span class="eyebrow">Avis</span>
         <h2 data-students="reviews">Les étudiants <span class="o">en parlent</span></h2>
-        <p id="reviews-sub">Aperçu du format : ces avis sont des exemples, à remplacer par les vrais retours de la bêta.</p>
+        <p id="reviews-sub">Les avis des testeurs de la bêta de <span class="brand">Revizuno</span>.</p>
       </div>
     </div>
     <div class="reviews">
@@ -943,16 +941,33 @@ const CONFIG = {
   students: null,
   // Destinations des boutons (pages de l'app web, même site)
   links: { web: '/commencer', pricing: '/pricing', login: '/login' },
-  // Avis : remplace par de vrais avis et passe example à false.
+  // Avis des testeurs de la bêta : prénom, note sur 5, texte (tels quels).
   reviews: [
-    { name: 'Léa M.', handle: '@lea.revise', text: "J'ai importé mon cours de bio la veille du partiel. Les flashcards m'ont sauvé la mise.", when: 'il y a 2 j', likes: 128, example: true },
-    { name: 'Yanis B.', handle: '@yanis.droit', text: "Les textes à trous ressemblent vraiment aux questions de mon prof de droit.", when: 'il y a 1 sem.', likes: 86, example: true },
-    { name: 'Chloé R.', handle: '@chloe.med', text: "Je fais mes fiches en 2 minutes au lieu de 2 heures.", when: 'il y a 3 j', likes: 214, example: true },
-    { name: 'Noah K.', handle: '@noah.k', text: "Le quiz s'adapte : facile au début, puis ça se corse quand je progresse.", when: 'il y a 5 j', likes: 57, example: true },
-    { name: 'Inès D.', handle: '@ines.etudie', text: "Photo du tableau, et mes exercices sont prêts dans le bus.", when: 'il y a 2 sem.', likes: 143, example: true },
-    { name: 'Mathis L.', handle: '@mathis.eco', text: "Enfin une app qui part de MES cours, pas d'un programme générique.", when: 'il y a 4 j', likes: 99, example: true },
-    { name: 'Sarah T.', handle: '@sarah.histo', text: "Je révise 20 minutes par jour et j'arrive sereine à l'examen.", when: 'hier', likes: 71, example: true },
-    { name: 'Lucas P.', handle: '@lucas.prepa', text: "Les explications après chaque erreur, c'est ce qui manquait.", when: 'il y a 6 j', likes: 64, example: true }
+    { name: 'Lucas', rating: 5, text: "Franchement super pratique pour réviser avant les exams." },
+    { name: 'Emma', rating: 5, text: "J'avais du mal à me motiver à réviser, l'application rend ça beaucoup plus simple." },
+    { name: 'Nathan', rating: 5, text: "Je gagne un temps fou sur mes révisions, vraiment pratique." },
+    { name: 'Chloé', rating: 5, text: "J'aime trop le concept, ça change des méthodes de révision classiques." },
+    { name: 'Hugo', rating: 4, text: "Bonne application dans l'ensemble, quelques améliorations possibles mais déjà très utile." },
+    { name: 'Léa', rating: 5, text: "Je pensais pas autant utiliser une appli pour mes cours mdrr." },
+    { name: 'Mathis', rating: 5, text: "Simple, rapide et efficace. Exactement ce qu'il me fallait." },
+    { name: 'Sarah', rating: 5, text: "Ça m'aide vraiment à mieux organiser mes sessions de révision." },
+    { name: 'Enzo', rating: 5, text: "Enfin une appli qui donne envie de bosser un minimum." },
+    { name: 'Camille', rating: 4, text: "Très bon outil pour réviser régulièrement sans y passer des heures." },
+    { name: 'Thomas', rating: 5, text: "Je l'utilise surtout avant mes contrôles et c'est super pratique." },
+    { name: 'Inès', rating: 5, text: "Je recommande à tous ceux qui galèrent à réviser seuls." },
+    { name: 'Maxime', rating: 5, text: "L'interface est vraiment propre et facile à comprendre." },
+    { name: 'Jade', rating: 5, text: "Beaucoup plus agréable que de relire mes cours pendant 3 heures." },
+    { name: 'Adam', rating: 4, text: "Bonne découverte, j'espère qu'il y aura encore plus de fonctionnalités." },
+    { name: 'Manon', rating: 5, text: "J'adore, je peux réviser même quand j'ai pas beaucoup de temps." },
+    { name: 'Raphaël', rating: 5, text: "Clairement une des applis les plus utiles que j'ai découvertes cette année." },
+    { name: 'Zoé', rating: 5, text: "Je suis tombée dessus par hasard et franchement très bonne surprise." },
+    { name: 'Louis', rating: 5, text: "Ça rend les révisions moins ennuyantes, et ça c'est déjà énorme." },
+    { name: 'Clara', rating: 4, text: "Très facile à utiliser, même quand on découvre l'application." },
+    { name: 'Gabriel', rating: 5, text: "Le genre d'outil que j'aurais aimé avoir depuis longtemps." },
+    { name: 'Alice', rating: 5, text: "Plus besoin de passer des heures à trouver comment réviser efficacement." },
+    { name: 'Noah', rating: 5, text: "Très bon concept, surtout pour les étudiants qui révisent à la dernière minute comme moi." },
+    { name: 'Eva', rating: 4, text: "Quelques petits détails à améliorer mais le principe est excellent." },
+    { name: 'Antoine', rating: 5, text: "Honnêtement je m'attendais pas à grand-chose mais l'appli est vraiment bien faite." }
   ],
   // Bandeau défilant du hero
   schools: ['Universités', 'Hautes écoles', 'Écoles polytechniques', 'Gymnases', 'Lycées', 'Prépas', 'Facs de médecine', 'Facs de droit', 'Écoles de commerce', "Écoles d'ingénieurs"]
@@ -981,23 +996,21 @@ const CONFIG = {
   document.getElementById('schools').innerHTML = sHtml + sHtml;
 
   // Reviews (two rows scrolling in opposite directions)
-  const heart = '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 21s-7.5-4.6-9.6-9.2C.9 8.4 3 4.5 6.8 4.5c2.2 0 3.6 1.2 5.2 3 1.6-1.8 3-3 5.2-3 3.8 0 5.9 3.9 4.4 7.3C19.5 16.4 12 21 12 21z"/></svg>';
-  const bubble = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a8.5 8.5 0 0 1-12.6 7.4L3 21l1.6-5.1A8.5 8.5 0 1 1 21 12z"/></svg>';
+  const star = on => `<svg viewBox="0 0 24 24" class="${on ? 'on' : ''}" aria-hidden="true"><path d="M12 2.8l2.8 5.7 6.3.9-4.6 4.4 1.1 6.2L12 17.1 6.4 20l1.1-6.2-4.6-4.4 6.3-.9z"/></svg>`;
+  const stars = n => `<span class="rv-stars" role="img" aria-label="${n} sur 5">${[1, 2, 3, 4, 5].map(i => star(i <= n)).join('')}</span>`;
   const card = r => `<article class="review">
-      <div class="rv-head"><span class="rv-av"><span>${esc(r.name[0])}</span></span><span class="rv-name">${esc(r.name)}<small>${esc(r.handle)}</small></span>${r.example ? '<span class="rv-ex">Exemple</span>' : ''}</div>
+      <div class="rv-head"><span class="rv-av"><span>${esc(r.name[0])}</span></span><span class="rv-name">${esc(r.name)}<small>Bêta Revizuno</small></span>${stars(r.rating)}</div>
       <p>${esc(r.text)}</p>
-      <div class="rv-foot"><span class="like">${heart}${r.likes}</span><span>${bubble}Répondre</span><span class="when">${esc(r.when)}</span></div>
     </article>`;
   const half = Math.ceil(CONFIG.reviews.length / 2);
   [[CONFIG.reviews.slice(0, half), 'rv-row-1'], [CONFIG.reviews.slice(half), 'rv-row-2']].forEach(([list, id]) => {
     const h = list.map(card).join('');
     document.getElementById(id).innerHTML = h + h;
   });
-  if (CONFIG.reviews.length && CONFIG.reviews.every(r => !r.example)) {
-    document.getElementById('reviews-sub').innerHTML = 'De vrais avis, publiés par de vrais étudiants qui révisent avec <span class="brand">Revizuno</span>.';
-  }
-  const quote = CONFIG.reviews.find(r => !r.example);
-  if (quote) {
+  if (CONFIG.reviews.length) {
+    const avg = CONFIG.reviews.reduce((t, r) => t + r.rating, 0) / CONFIG.reviews.length;
+    document.getElementById('reviews-sub').innerHTML = `${stars(Math.round(avg))} <strong>${avg.toLocaleString('fr-CH', { maximumFractionDigits: 1 })}/5</strong> · ${CONFIG.reviews.length} avis des testeurs de la bêta de <span class="brand">Revizuno</span>`;
+    const quote = CONFIG.reviews[0];
     const q = document.getElementById('final-quote');
     q.textContent = '« ' + quote.text + ' » ' + quote.name;
     q.hidden = false;
