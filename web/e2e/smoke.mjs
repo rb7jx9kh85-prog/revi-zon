@@ -263,7 +263,7 @@ try {
     );
 
     await page.goto(BASE + "/pricing", { waitUntil: "networkidle" });
-    await page.click('button:has-text("Passer à Pro")');
+    await page.click('button:has-text("Choisir 1 mois")');
     const onStripe = await page.waitForURL(/checkout\.stripe\.com/, { timeout: 20000 }).then(
       () => (log("redirection Stripe", true), true),
       async () => (log("redirection Stripe", false, (await page.locator(".notice.error").allInnerTexts()).join(" | ")), false),

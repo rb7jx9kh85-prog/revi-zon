@@ -36,7 +36,12 @@ export function PlannerBoard({ activity, sessions: initial, courses }: { activit
   const [justAdded, setJustAdded] = useState<string | null>(null);
   const [open, setOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
-  useEffect(() => setMounted(true), []);
+  useEffect(() => {
+    setMounted(true);
+    // Après 18 h, la session proposée par défaut passe au lendemain
+    const now = new Date();
+    if (now.getHours() >= 18) setDate(dayKey(new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1)));
+  }, []);
 
   const sessionsByDay = useMemo(() => {
     const map = new Map<string, StudySession[]>();
@@ -87,6 +92,10 @@ export function PlannerBoard({ activity, sessions: initial, courses }: { activit
     const start = new Date(`${date}T${time}`);
     if (Number.isNaN(start.getTime())) {
       setError("Date ou heure invalide.");
+      return;
+    }
+    if (start.getTime() < Date.now()) {
+      setError("Choisis une heure à venir.");
       return;
     }
     setSaving(true);
