@@ -1,12 +1,17 @@
 // Revizuno : paiement de l'abonnement Pro (Stripe).
-// POST { action: "checkout" | "portal" } avec le jeton de l'utilisateur.
+// POST { action: "checkout" | "portal", plan?: "monthly" | "semester" | "annual", currency?: "eur" | "chf" }
+// avec le jeton de l'utilisateur. Le prix Stripe est retrouvé par sa lookup key :
+// revizuno_pro_<plan>_<devise> (un prix par offre et par devise).
 // Répond { url } : page de paiement Stripe, ou portail pour gérer / résilier l'abonnement.
 
 import { createClient } from "npm:@supabase/supabase-js@2";
 import Stripe from "npm:stripe@19";
 
 const STRIPE_SECRET_KEY = Deno.env.get("STRIPE_SECRET_KEY") ?? "";
+// Ancien prix unique (mensuel), utilisé seulement si les lookup keys n'existent pas encore
 const STRIPE_PRICE_ID = Deno.env.get("STRIPE_PRICE_ID") ?? "";
+const PLANS = ["monthly", "semester", "annual"];
+const CURRENCIES = ["eur", "chf"];
 
 const CORS = {
   "Access-Control-Allow-Origin": "*",
@@ -54,7 +59,7 @@ function appOrigin(req: Request): string | null {
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: CORS });
   if (req.method !== "POST") return json({ error: "Méthode non autorisée" }, 405);
-  if (!STRIPE_SECRET_KEY || !STRIPE_PRICE_ID) return json({ error: "Le paiement n'est pas encore configuré." }, 500);
+  if (!STRIPE_SECRET_KEY) return json({ error: "Le paiement n'est pas encore configuré." }, 503);
 
   const token = (req.headers.get("Authorization") ?? "").replace(/^Bearer\s+/i, "");
   const { data: auth } = token ? await admin.auth.getUser(token) : { data: { user: null } };
@@ -65,10 +70,15 @@ Deno.serve(async (req) => {
   if (!origin) return json({ error: "Origine non autorisée" }, 400);
 
   let action = "checkout";
+  let plan = "monthly";
+  let currency = "eur";
   try {
-    action = String((await req.json()).action ?? "checkout");
+    const body = await req.json();
+    action = String(body.action ?? "checkout");
+    if (PLANS.includes(body.plan)) plan = body.plan;
+    if (CURRENCIES.includes(body.currency)) currency = body.currency;
   } catch {
-    // corps vide : paiement par défaut
+    // corps vide : paiement mensuel par défaut
   }
 
   const { data: profile } = await admin
@@ -92,6 +102,20 @@ Deno.serve(async (req) => {
       return json({ url: portal.url });
     }
 
+    // Client Stripe inutilisable (créé en mode test, supprimé ou déjà facturé dans une autre devise) : on en recrée un
+    if (customerId) {
+      try {
+        const existing = await stripe().customers.retrieve(customerId);
+        if (existing.deleted || (existing.currency && existing.currency !== currency)) customerId = null;
+      } catch {
+        customerId = null;
+      }
+    }
+
+    const prices = await stripe().prices.list({ lookup_keys: [`revizuno_pro_${plan}_${currency}`], active: true, limit: 1 });
+    const priceId = prices.data[0]?.id ?? (plan === "monthly" ? STRIPE_PRICE_ID : "");
+    if (!priceId) return json({ error: "Cette offre n'est pas encore disponible. Choisis-en une autre ou réessaie plus tard." }, 503);
+
     if (!customerId) {
       const customer = await stripe().customers.create({
         email: user.email ?? undefined,
@@ -105,10 +129,10 @@ Deno.serve(async (req) => {
       mode: "subscription",
       customer: customerId,
       client_reference_id: user.id,
-      line_items: [{ price: STRIPE_PRICE_ID, quantity: 1 }],
+      line_items: [{ price: priceId, quantity: 1 }],
       allow_promotion_codes: true,
       locale: "auto",
-      subscription_data: { metadata: { supabase_user_id: user.id } },
+      subscription_data: { metadata: { supabase_user_id: user.id, plan } },
       success_url: `${origin}/billing/success?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${origin}/pricing?canceled=1`,
     });

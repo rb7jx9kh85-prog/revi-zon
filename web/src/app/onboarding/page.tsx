@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { OnboardingFlow } from "@/components/onboarding-flow";
-import { PRO_PRICE_LABEL, PRO_PRICE_PERIOD } from "@/lib/pricing";
+import { visitorCurrency } from "@/lib/currency";
 import { createClient } from "@/lib/supabase/server";
 
 export const metadata: Metadata = { title: "Bienvenue" };
@@ -39,8 +39,7 @@ export default async function OnboardingPage() {
         initialAnswers={answersFromSignup}
         initialName={profile?.display_name ?? ""}
         isPro={profile?.plan === "pro"}
-        priceLabel={PRO_PRICE_LABEL}
-        pricePeriod={PRO_PRICE_PERIOD}
+        currency={await visitorCurrency()}
         limits={{ freeDocs: free?.max_documents_per_month ?? 3, proDocs: pro?.max_documents_per_month ?? 200, freeMb: free?.max_file_size_mb ?? 10, proMb: pro?.max_file_size_mb ?? 25 }}
       />
     </main>

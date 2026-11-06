@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { OnboardingFlow } from "@/components/onboarding-flow";
-import { PRO_PRICE_LABEL, PRO_PRICE_PERIOD } from "@/lib/pricing";
+import { visitorCurrency } from "@/lib/currency";
 import { createClient } from "@/lib/supabase/server";
 
 export const metadata: Metadata = {
@@ -28,8 +28,7 @@ export default async function StartPage() {
         initialAnswers={null}
         initialName=""
         isPro={false}
-        priceLabel={PRO_PRICE_LABEL}
-        pricePeriod={PRO_PRICE_PERIOD}
+        currency={await visitorCurrency()}
         limits={{ freeDocs: 3, proDocs: 200, freeMb: 10, proMb: 25 }}
       />
     </main>

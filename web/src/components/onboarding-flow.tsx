@@ -5,6 +5,7 @@ import { useEffect, useMemo, useState } from "react";
 import { callbackUrl, readableAuthError } from "@/lib/auth-client";
 import { burstConfetti } from "@/lib/confetti";
 import { readFunctionError } from "@/lib/fn-error";
+import { DEFAULT_PLAN, PLANS, planMath, type Currency, type PlanId } from "@/lib/pricing";
 import { createClient } from "@/lib/supabase/client";
 
 type Option = { value: string; label: string; emoji?: string };
@@ -237,8 +238,7 @@ export function OnboardingFlow({
   initialAnswers,
   initialName,
   isPro,
-  priceLabel,
-  pricePeriod,
+  currency,
   limits,
 }: {
   // public : avant l'inscription (/commencer) ; app : connecté (/onboarding)
@@ -246,8 +246,7 @@ export function OnboardingFlow({
   initialAnswers: Answers | null;
   initialName: string;
   isPro: boolean;
-  priceLabel: string;
-  pricePeriod: string;
+  currency: Currency;
   limits: { freeDocs: number; proDocs: number; freeMb: number; proMb: number };
 }) {
   const router = useRouter();
@@ -257,6 +256,7 @@ export function OnboardingFlow({
   const [loadingMs, setLoadingMs] = useState(7200);
   const [email, setEmail] = useState("");
   const [signupBusy, setSignupBusy] = useState(false);
+  const [planId, setPlanId] = useState<PlanId>(DEFAULT_PLAN);
   const [progress, setProgress] = useState(0);
   const [checkout, setCheckout] = useState<"idle" | "busy">("idle");
   const [error, setError] = useState<string | null>(null);
@@ -389,16 +389,12 @@ export function OnboardingFlow({
     };
   }, [answers, minutes]);
 
-  const perDay = useMemo(() => {
-    const amount = Number((priceLabel.match(/[\d.,]+/)?.[0] ?? "").replace(",", "."));
-    const currency = priceLabel.replace(/[\d.,\s]+/g, "").trim();
-    return amount ? `${(amount / 30).toFixed(2)} ${currency}` : null;
-  }, [priceLabel]);
+  const selected = PLANS.find((p) => p.id === planId) ?? PLANS[0];
 
   async function goPro() {
     setCheckout("busy");
     setError(null);
-    const { data, error: fnError } = await createClient().functions.invoke("billing", { body: { action: "checkout" } });
+    const { data, error: fnError } = await createClient().functions.invoke("billing", { body: { action: "checkout", plan: planId, currency } });
     if (fnError || !data?.url) {
       setError(fnError ? await readFunctionError(fnError, "Le paiement n'est pas disponible pour le moment.") : "Le paiement n'est pas disponible pour le moment.");
       setCheckout("idle");
@@ -546,31 +542,50 @@ export function OnboardingFlow({
         {planCard}
 
         <h2 className="pw-h2">Choisis ton plan.</h2>
-        <div className="pw-plan on" aria-label="Revizuno Pro, sélectionné">
-          <span className="pw-badge">Recommandé pour toi</span>
-          <span className="pw-radio" aria-hidden="true">
-            ✓
-          </span>
-          <div className="pw-plan-main">
-            <strong>Revizuno Pro</strong>
-            <span>
-              {priceLabel} <span className="muted">/ {pricePeriod.replace(/^par /, "")}</span>
-            </span>
-            <span className="pw-tag">Sans engagement · résiliable à tout moment</span>
-          </div>
-          {perDay ? (
-            <div className="pw-perday">
-              <strong>{perDay}</strong>
-              <span className="muted">/ jour</span>
-            </div>
-          ) : null}
+        <div className="pw-plans" role="radiogroup" aria-label="Offres Revizuno Pro">
+          {PLANS.map((p) => {
+            const m = planMath(p, currency);
+            const on = p.id === planId;
+            return (
+              <button
+                key={p.id}
+                type="button"
+                role="radio"
+                aria-checked={on}
+                className={`pw-plan ${on ? "on" : ""}`}
+                onClick={() => setPlanId(p.id)}
+              >
+                {p.recommended ? <span className="pw-badge">Offre recommandée</span> : null}
+                <span className="pw-radio" aria-hidden="true">
+                  {on ? "✓" : ""}
+                </span>
+                <span className="pw-plan-main">
+                  <strong>
+                    {p.short}
+                    {m.saving ? <span className="pw-save">−{m.saving} %</span> : null}
+                  </strong>
+                  <span>
+                    {m.price} <span className="muted">/ {p.period}</span>
+                  </span>
+                  <span className="pw-tag">{p.months > 1 ? `soit ${m.perMonth} par mois` : "Sans engagement"}</span>
+                </span>
+                <span className="pw-perday">
+                  <strong>{m.perDay}</strong>
+                  <span className="muted">/ jour</span>
+                </span>
+              </button>
+            );
+          })}
         </div>
 
         <button type="button" className="pw-cta" onClick={goPro} disabled={checkout === "busy"}>
-          {checkout === "busy" ? "Ouverture du paiement…" : "Continuer"}
+          {checkout === "busy" ? "Ouverture du paiement…" : `Continuer avec ${selected.label}`}
         </button>
         {error && <p className="notice error">{error}</p>}
-        <p className="pw-secure">🔒 Paiement sécurisé par Stripe</p>
+        <p className="pw-secure">🔒 Paiement sécurisé par Stripe · résiliable à tout moment</p>
+        <p className="muted small" style={{ textAlign: "center", marginTop: -10 }}>
+          Prix TTC en {currency === "chf" ? "francs suisses" : "euros"}, renouvelé automatiquement à la fin de chaque période.
+        </p>
 
         <h2 className="pw-h2">Ce que tu débloques</h2>
         <ul className="pw-list">

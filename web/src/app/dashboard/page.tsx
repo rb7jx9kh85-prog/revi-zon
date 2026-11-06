@@ -6,6 +6,7 @@ import { DeleteAccount } from "@/components/dashboard/delete-account";
 import { PlannerBoard } from "@/components/dashboard/planner-board";
 import { WelcomePro } from "@/components/dashboard/welcome-pro";
 import { SiteFooter } from "@/components/site-footer";
+import { PLANS } from "@/lib/pricing";
 import { createClient } from "@/lib/supabase/server";
 import type { StudyDocument, StudySession } from "@/lib/types";
 import { ProfileForm } from "./profile-form";
@@ -43,7 +44,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
   const since = new Date(Date.now() - 120 * 86_400_000).toISOString();
   const sessionsSince = new Date(Date.now() - 62 * 86_400_000).toISOString();
   const [profileRes, usageRes, limitsRes, docsRes, attemptsRes, exercisesRes, scheduleRes, sessionsRes] = await Promise.all([
-    supabase.from("profiles").select("display_name, school_level, plan, onboarding_completed").eq("id", user.id).maybeSingle(),
+    supabase.from("profiles").select("display_name, school_level, plan, onboarding_completed, subscription_plan").eq("id", user.id).maybeSingle(),
     supabase.from("usage_monthly").select("documents_count").eq("user_id", user.id).eq("period", period).maybeSingle(),
     supabase.from("plan_limits").select("plan, max_documents_per_month"),
     supabase
@@ -56,7 +57,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
     supabase.from("study_sessions").select("id, document_id, title, starts_at, duration_min, done").gte("starts_at", sessionsSince).order("starts_at"),
   ]);
 
-  const profile = profileRes.data as { display_name: string | null; school_level: string | null; plan: string; onboarding_completed: boolean } | null;
+  const profile = profileRes.data as { display_name: string | null; school_level: string | null; plan: string; onboarding_completed: boolean; subscription_plan: string | null } | null;
   // Premier passage : questionnaire d'accueil avant tout
   if (profile && !profile.onboarding_completed) redirect("/onboarding");
   const plan = profile?.plan ?? "free";
@@ -211,7 +212,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
           <section className="card stack">
             <div className="topbar">
               <h2 style={{ fontSize: "1.2rem" }}>Ce mois-ci</h2>
-              <span className="pill">{plan === "pro" ? "Pro" : "Gratuit"}</span>
+              <span className="pill">{plan === "pro" ? (PLANS.find((p) => profile?.subscription_plan?.includes(`_${p.id}_`))?.label ?? "Pro") : "Gratuit"}</span>
             </div>
             <p className="stat">
               {used} / {limit}
