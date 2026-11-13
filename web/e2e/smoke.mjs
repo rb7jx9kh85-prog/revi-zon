@@ -59,6 +59,19 @@ async function answerAll(page, until) {
       await page.click('button:has-text("Continuer")');
     } else if (await page.locator('button:has-text("Super, on continue")').count()) {
       await page.click('button:has-text("Super, on continue")');
+    } else if (await page.locator(".ob-date").count()) {
+      await page.click('.ob-chip:has-text("Dans 1 mois")');
+      await page.click('.ob-date button:has-text("Continuer")');
+    } else if (await page.locator(".ob-slider").count()) {
+      await page.locator(".ob-range").fill("30");
+      await page.click('.ob-slider button:has-text("Continuer")');
+    } else if (await page.locator(".ob-hold").count()) {
+      const box = await page.locator(".ob-hold-ring").boundingBox();
+      await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+      await page.mouse.down();
+      await page.waitForTimeout(1800);
+      await page.mouse.up();
+      await page.waitForTimeout(900);
     } else if (await page.locator(".ob-options.multi").count()) {
       await page.locator(".ob-option").first().click();
       await page.click('button:has-text("Continuer")');
@@ -96,6 +109,8 @@ try {
     async () => log("préparation puis choix de l'offre (sans compte)", true, await p0.locator(".paywall .ob-title").innerText()),
     () => log("préparation puis choix de l'offre (sans compte)", false),
   );
+  const countdown = await p0.locator(".ob-countdown").innerText().catch(() => "");
+  log("compte à rebours de l'examen", /J-30/.test(countdown), countdown.replace(/\s+/g, " ").slice(0, 90));
   await p0.locator(".pw-cta").first().click();
   await p0.waitForSelector(".ob-signup #ob-email", { timeout: 10000 }).then(
     async () => log("offre choisie puis création de compte", true, (await p0.locator(".paywall .muted").first().innerText()).slice(0, 120)),
