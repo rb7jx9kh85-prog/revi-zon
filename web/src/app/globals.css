@@ -605,3 +605,62 @@ textarea:focus { border-color: var(--fg); outline: none; }
 .pw-plans .pw-plan:not(.on):hover { border-color: var(--fg); transform: translateY(-2px); }
 .pw-plan:not(.on) .pw-radio { background: transparent; border: 2px solid var(--line); }
 .pw-save { margin-left: 10px; padding: 3px 9px; border-radius: 99px; background: var(--accent-4); color: var(--on-accent); font: 800 0.8rem var(--f-body), sans-serif; vertical-align: 3px; }
+
+/* ---------- Questionnaire : animations, sons, date d'examen, curseur, engagement ---------- */
+.ob-sound { width: 38px; height: 38px; flex: none; border-radius: 12px; border: 2px solid var(--fg); background: var(--card); font-size: 1.05rem; cursor: pointer; transition: transform 0.15s; }
+.ob-sound:active, .ob-back:not(:disabled):active { transform: scale(0.9); }
+.ob-progress { height: 12px; border: 2px solid var(--fg); background: var(--card); }
+.ob-progress span { background: linear-gradient(90deg, var(--accent-2), var(--accent), var(--accent-4)); background-size: 200% 100%; transition: width 0.5s cubic-bezier(0.34, 1.56, 0.64, 1); animation: ob-bar 3s linear infinite; }
+@keyframes ob-bar { to { background-position: -200% 0; } }
+
+.ob-slide { animation: ob-in 0.42s cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+.ob-slide-back { animation: ob-in-back 0.42s cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+@keyframes ob-in { from { opacity: 0; transform: translateX(40px); } to { opacity: 1; transform: none; } }
+@keyframes ob-in-back { from { opacity: 0; transform: translateX(-40px); } to { opacity: 1; transform: none; } }
+
+.ob-option { position: relative; transition: transform 0.15s, border-color 0.15s, background 0.2s, box-shadow 0.2s; -webkit-tap-highlight-color: transparent; }
+.ob-option:active { transform: scale(0.97); }
+.ob-opt-label { flex: 1; }
+.ob-option.on { animation: ob-pick 0.35s cubic-bezier(0.34, 1.56, 0.64, 1); }
+.ob-option.on::after { content: "✓"; flex: none; width: 26px; height: 26px; border-radius: 50%; display: grid; place-items: center; background: var(--fg); color: var(--bg); font-size: 0.85rem; font-weight: 900; animation: pop-in 0.3s both; }
+.ob-option.on .ob-opt-emoji { animation: ob-bounce 0.45s cubic-bezier(0.34, 1.56, 0.64, 1); }
+@keyframes ob-pick { 0% { transform: scale(1); } 40% { transform: scale(1.035); } 100% { transform: scale(1); } }
+@keyframes ob-bounce { 0% { transform: scale(1); } 40% { transform: scale(1.45) rotate(-10deg); } 100% { transform: scale(1); } }
+
+.ob-toast { position: fixed; top: 18px; left: 50%; z-index: 50; transform: translateX(-50%); padding: 10px 20px; border-radius: 99px; border: 2px solid var(--fg); background: var(--accent); color: var(--on-accent); font: 800 1rem var(--f-body), sans-serif; box-shadow: var(--stick); animation: ob-toast 1.8s both; white-space: nowrap; }
+@keyframes ob-toast { 0% { opacity: 0; transform: translate(-50%, -20px) scale(0.8); } 12% { opacity: 1; transform: translate(-50%, 0) scale(1.05); } 20% { transform: translate(-50%, 0) scale(1); } 85% { opacity: 1; } 100% { opacity: 0; transform: translate(-50%, -10px); } }
+
+.ob-countdown-card { display: grid; justify-items: center; gap: 4px; padding: 22px 16px; border-radius: 22px; border: 2px dashed var(--line); background: var(--card); text-align: center; transition: border-color 0.2s, background 0.3s; }
+.ob-countdown-card.set { border: 2px solid var(--fg); background: color-mix(in srgb, var(--accent) 30%, var(--card)); box-shadow: var(--stick); }
+.ob-countdown-big { font: 800 clamp(2.8rem, 12vw, 4rem)/1 var(--f-display), sans-serif; letter-spacing: -0.03em; font-variant-numeric: tabular-nums; }
+.ob-countdown-card.set .ob-countdown-big { animation: pop-in 0.35s both; }
+.ob-countdown-card span:last-child { text-transform: capitalize; font-weight: 600; }
+.ob-chips { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
+.ob-chip { padding: 13px 10px; border-radius: 14px; border: 2px solid var(--line); background: var(--card); color: var(--fg); font: 700 0.98rem var(--f-body), sans-serif; cursor: pointer; transition: transform 0.15s, border-color 0.15s, background 0.2s; }
+.ob-chip:hover { border-color: var(--fg); }
+.ob-chip:active { transform: scale(0.96); }
+.ob-chip.on { border-color: var(--fg); background: color-mix(in srgb, var(--accent-2) 30%, var(--card)); box-shadow: var(--stick); animation: ob-pick 0.35s both; }
+.ob-field { display: grid; gap: 6px; font-weight: 700; }
+.ob-field .ob-input { font-size: 1.05rem; padding: 13px 16px; }
+
+.ob-slider-value { display: grid; justify-items: center; gap: 4px; text-align: center; }
+.ob-slider-value strong { font: 800 clamp(2.6rem, 11vw, 3.6rem)/1 var(--f-display), sans-serif; letter-spacing: -0.03em; font-variant-numeric: tabular-nums; }
+.ob-slider-emoji { font-size: 2.6rem; animation: ob-bounce 0.45s both; }
+.ob-range { -webkit-appearance: none; appearance: none; width: 100%; height: 14px; border-radius: 99px; border: 2px solid var(--fg); background: linear-gradient(90deg, var(--accent-2) 0 var(--fill), var(--card) var(--fill) 100%); cursor: pointer; touch-action: none; }
+.ob-range::-webkit-slider-thumb { -webkit-appearance: none; width: 34px; height: 34px; border-radius: 50%; border: 3px solid var(--fg); background: var(--accent); box-shadow: var(--stick); transition: transform 0.15s; }
+.ob-range:active::-webkit-slider-thumb { transform: scale(1.18); }
+.ob-range::-moz-range-thumb { width: 30px; height: 30px; border-radius: 50%; border: 3px solid var(--fg); background: var(--accent); box-shadow: var(--stick); }
+.ob-range-scale { display: flex; justify-content: space-between; margin-top: -8px; }
+
+.ob-hold { --p: 0; display: grid; justify-items: center; gap: 14px; padding: 8px; border: 0; background: none; color: var(--fg); cursor: pointer; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; touch-action: none; -webkit-tap-highlight-color: transparent; }
+.ob-hold-ring { width: 168px; height: 168px; border-radius: 50%; border: 3px solid var(--fg); display: grid; place-items: center; background: conic-gradient(var(--accent-2) calc(var(--p) * 360deg), var(--line) 0); box-shadow: 5px 5px 0 var(--fg); transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1); }
+.ob-hold-ring span { width: 126px; height: 126px; border-radius: 50%; display: grid; place-items: center; background: var(--bg); font-size: 3rem; font-weight: 900; }
+.ob-hold.holding .ob-hold-ring { transform: scale(calc(0.94 + var(--p) * 0.1)); }
+.ob-hold.holding .ob-hold-ring span { animation: wiggle 0.25s infinite; }
+.ob-hold.done .ob-hold-ring { background: var(--accent-4); animation: pop-in 0.4s both; }
+.ob-hold.done .ob-hold-ring span { color: var(--accent-4); }
+.ob-hold-label { font: 800 1.1rem var(--f-body), sans-serif; }
+.ob-hold:focus-visible .ob-hold-ring { outline: 3px solid var(--accent-3); outline-offset: 4px; }
+
+.ob-countdown { display: flex; align-items: center; gap: 16px; padding: 14px 16px; border-radius: 18px; border: 2px solid var(--fg); background: color-mix(in srgb, var(--accent) 28%, var(--card)); }
+.ob-countdown .ob-countdown-big { font-size: 2.2rem; flex: none; }

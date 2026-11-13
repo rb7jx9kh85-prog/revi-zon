@@ -1,12 +1,13 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { callbackUrl, readableAuthError, signInWithGoogle } from "@/lib/auth-client";
 import { GoogleButton } from "./google-button";
 import { burstConfetti } from "@/lib/confetti";
 import { readFunctionError } from "@/lib/fn-error";
 import { DEFAULT_PLAN, PLANS, planMath, type Currency, type PlanId } from "@/lib/pricing";
+import { buzz, isMuted, play, setMuted } from "@/lib/sfx";
 import { createClient } from "@/lib/supabase/client";
 
 type Option = { value: string; label: string; emoji?: string };
@@ -14,14 +15,17 @@ type Question =
   | { kind: "text"; key: "name"; title: string; subtitle?: string; placeholder: string }
   | { kind: "single"; key: string; title: string; subtitle?: string; options: Option[] }
   | { kind: "multi"; key: string; title: string; subtitle?: string; options: Option[] }
-  | { kind: "fact"; key: string; title: string; text: string; emoji: string };
+  | { kind: "fact"; key: string; title: string; text: string; emoji: string }
+  | { kind: "date"; key: "exam_date"; title: string; subtitle?: string }
+  | { kind: "slider"; key: "minutes"; title: string; subtitle?: string; min: number; max: number; step: number }
+  | { kind: "hold"; key: "commit"; title: string; subtitle?: string };
 
 const QUESTIONS: Question[] = [
   { kind: "text", key: "name", title: "Comment tu t'appelles ?", subtitle: "Revi aime bien savoir à qui il parle.", placeholder: "Ton prénom" },
   {
     kind: "single",
     key: "age",
-    title: "Quel âge as-tu ?",
+    title: "Enchanté {name} ! Quel âge as-tu ?",
     subtitle: "Pour adapter les explications à ton niveau.",
     options: [
       { value: "-13", label: "Moins de 13 ans", emoji: "🧒" },
@@ -57,15 +61,10 @@ const QUESTIONS: Question[] = [
     ],
   },
   {
-    kind: "single",
-    key: "exam",
+    kind: "date",
+    key: "exam_date",
     title: "C'est quand, ton prochain examen ?",
-    options: [
-      { value: "week", label: "Cette semaine", emoji: "😰" },
-      { value: "month", label: "Ce mois-ci", emoji: "📅" },
-      { value: "quarter", label: "Dans 1 à 3 mois", emoji: "🗓️" },
-      { value: "none", label: "Pas d'examen prévu", emoji: "😎" },
-    ],
+    subtitle: "On cale ton programme sur cette date.",
   },
   {
     kind: "fact",
@@ -97,16 +96,13 @@ const QUESTIONS: Question[] = [
     ],
   },
   {
-    kind: "single",
+    kind: "slider",
     key: "minutes",
     title: "Combien de temps peux-tu réviser par jour ?",
     subtitle: "Sois honnête, on construit ton rythme là-dessus.",
-    options: [
-      { value: "10", label: "10 minutes", emoji: "☕" },
-      { value: "20", label: "20 minutes", emoji: "⏱️" },
-      { value: "40", label: "40 minutes", emoji: "💪" },
-      { value: "60", label: "1 heure ou plus", emoji: "🚀" },
-    ],
+    min: 5,
+    max: 90,
+    step: 5,
   },
   {
     kind: "single",
@@ -193,20 +189,175 @@ const QUESTIONS: Question[] = [
     ],
   },
   {
-    kind: "single",
+    kind: "hold",
     key: "commit",
-    title: "Prêt·e à t'y mettre pendant 2 semaines ?",
-    subtitle: "C'est le temps qu'il faut pour sentir la différence.",
-    options: [
-      { value: "yes", label: "Oui, je m'engage", emoji: "💪" },
-      { value: "try", label: "Je vais essayer", emoji: "🙂" },
-    ],
+    title: "{name}, prêt·e à t'y mettre pendant 2 semaines ?",
+    subtitle: "C'est le temps qu'il faut pour sentir la différence. Maintiens le bouton pour t'engager.",
   },
 ];
 
 const LABELS: Record<string, Record<string, string>> = Object.fromEntries(
   QUESTIONS.filter((q) => q.kind === "single" || q.kind === "multi").map((q) => [q.key, Object.fromEntries((q as { options: Option[] }).options.map((o) => [o.value, o.label]))]),
 );
+
+const EXAM_LABELS: Record<string, string> = {
+  week: "Cette semaine",
+  month: "Ce mois-ci",
+  quarter: "Dans 1 à 3 mois",
+  later: "Dans plus de 3 mois",
+  none: "Pas d'examen prévu",
+};
+
+const DAY_MS = 86_400_000;
+
+function isoDay(d: Date) {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+
+function today() {
+  const n = new Date();
+  return new Date(n.getFullYear(), n.getMonth(), n.getDate());
+}
+
+// Jours entre aujourd'hui et une date « AAAA-MM-JJ » (null si pas de date valable)
+function daysUntil(iso: unknown): number | null {
+  if (typeof iso !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(iso)) return null;
+  const [y, m, d] = iso.split("-").map(Number);
+  const days = Math.round((new Date(y, m - 1, d).getTime() - today().getTime()) / DAY_MS);
+  return days >= 0 ? days : null;
+}
+
+function examBucket(days: number | null) {
+  if (days === null) return "none";
+  if (days <= 7) return "week";
+  if (days <= 31) return "month";
+  if (days <= 92) return "quarter";
+  return "later";
+}
+
+function longDate(iso: string) {
+  const [y, m, d] = iso.split("-").map(Number);
+  return new Date(y, m - 1, d).toLocaleDateString("fr-CH", { weekday: "long", day: "numeric", month: "long" });
+}
+
+function fmtMinutes(m: number) {
+  return m < 60 ? `${m} min` : `${Math.floor(m / 60)} h${m % 60 ? ` ${m % 60}` : ""}`;
+}
+
+function minutesEmoji(min: number) {
+  return min <= 10 ? "☕" : min <= 20 ? "⏱️" : min <= 40 ? "💪" : min <= 60 ? "🔥" : "🚀";
+}
+
+// Nombre qui défile jusqu'à sa nouvelle valeur, avec un petit tic sonore
+function useCountUp(target: number, sound = true) {
+  const [shown, setShown] = useState(target);
+  const from = useRef(target);
+  useEffect(() => {
+    const start = from.current;
+    if (start === target) return;
+    const t0 = performance.now();
+    const dur = Math.min(650, 160 + Math.abs(target - start) * 6);
+    let last = start;
+    let lastSound = 0;
+    let raf = 0;
+    const step = (now: number) => {
+      const t = Math.min(1, (now - t0) / dur);
+      const v = Math.round(start + (target - start) * (1 - Math.pow(1 - t, 3)));
+      if (v !== last) {
+        last = v;
+        setShown(v);
+        if (sound && now - lastSound > 40) {
+          lastSound = now;
+          play("tick", 0.9 + t * 0.4);
+        }
+      }
+      if (t < 1) raf = requestAnimationFrame(step);
+      else from.current = target;
+    };
+    raf = requestAnimationFrame(step);
+    return () => {
+      cancelAnimationFrame(raf);
+      from.current = last;
+    };
+  }, [target, sound]);
+  return shown;
+}
+
+const HOLD_MS = 1500;
+
+// Bouton « maintenir pour s'engager » : l'anneau se remplit, le son monte, puis confettis
+function HoldButton({ onDone }: { onDone: () => void }) {
+  const [p, setP] = useState(0);
+  const [done, setDone] = useState(false);
+  const raf = useRef(0);
+  const t0 = useRef(0);
+  const ticks = useRef(0);
+
+  useEffect(() => () => cancelAnimationFrame(raf.current), []);
+
+  function begin() {
+    if (done) return;
+    cancelAnimationFrame(raf.current);
+    t0.current = performance.now();
+    ticks.current = 0;
+    play("tap");
+    buzz(8);
+    const loop = (now: number) => {
+      const t = Math.min(1, (now - t0.current) / HOLD_MS);
+      setP(t);
+      const k = Math.floor(t * 12);
+      if (k > ticks.current) {
+        ticks.current = k;
+        play("tick", 1 + k * 0.1);
+        buzz(4);
+      }
+      if (t >= 1) {
+        setDone(true);
+        play("success");
+        buzz([20, 40, 30]);
+        burstConfetti(90);
+        setTimeout(onDone, 900);
+        return;
+      }
+      raf.current = requestAnimationFrame(loop);
+    };
+    raf.current = requestAnimationFrame(loop);
+  }
+
+  function end() {
+    if (done) return;
+    cancelAnimationFrame(raf.current);
+    setP(0);
+  }
+
+  return (
+    <button
+      type="button"
+      className={`ob-hold ${done ? "done" : p > 0 ? "holding" : ""}`}
+      style={{ "--p": p } as React.CSSProperties}
+      onPointerDown={begin}
+      onPointerUp={end}
+      onPointerLeave={end}
+      onPointerCancel={end}
+      onContextMenu={(e) => e.preventDefault()}
+      onKeyDown={(e) => {
+        if ((e.key === " " || e.key === "Enter") && !e.repeat) {
+          e.preventDefault();
+          begin();
+        }
+      }}
+      onKeyUp={(e) => {
+        if (e.key === " " || e.key === "Enter") end();
+      }}
+      aria-label="Maintiens pour t'engager"
+    >
+      <span className="ob-hold-ring" aria-hidden="true">
+        <span>{done ? "✓" : "💪"}</span>
+      </span>
+      <span className="ob-hold-label">{done ? "C'est parti !" : p > 0 ? "Continue d'appuyer…" : "Maintiens pour t'engager"}</span>
+    </button>
+  );
+}
 
 const LOADING_STEPS = ["Analyse de tes réponses", "Choix des méthodes adaptées à ton profil", "Calcul de ton rythme de révision idéal", "Préparation de ton programme personnalisé"];
 
@@ -265,10 +416,18 @@ export function OnboardingFlow({
   const [checkout, setCheckout] = useState<"idle" | "busy">("idle");
   const [error, setError] = useState<string | null>(null);
   const [openFaq, setOpenFaq] = useState<number | null>(null);
+  // Animation de transition entre les questions, son coupé ou non, petit message d'encouragement
+  const [dir, setDir] = useState<"fwd" | "back">("fwd");
+  const [soundOff, setSoundOff] = useState(false);
+  const [toast, setToast] = useState<string | null>(null);
+  const advancing = useRef(false);
+  useEffect(() => setSoundOff(isMuted()), []);
 
   const q = QUESTIONS[index];
   const name = String(answers.name ?? "").trim();
-  const minutes = Number(answers.minutes ?? 20);
+  const minutes = Number(answers.minutes ?? 20) || 20;
+  const examDays = daysUntil(answers.exam_date);
+  const shownDays = useCountUp(examDays ?? 0, phase === "questions" && q.kind === "date");
 
   async function save(final: Answers) {
     const { name: displayName, level, ...rest } = final;
@@ -320,13 +479,30 @@ export function OnboardingFlow({
   function next(update?: Answers) {
     const merged = { ...answers, ...update };
     setAnswers(merged);
+    setDir("fwd");
     if (index + 1 < QUESTIONS.length) {
-      setIndex(index + 1);
+      const to = index + 1;
+      setIndex(to);
+      if (to === Math.floor(QUESTIONS.length / 2)) {
+        play("milestone");
+        buzz([10, 30, 10]);
+        setToast(name ? `À mi-chemin, ${name} 🔥` : "À mi-chemin 🔥");
+        setTimeout(() => setToast(null), 1800);
+      } else {
+        play("next", 1 + (to / QUESTIONS.length) * 0.5);
+      }
       return;
     }
     if (mode === "public") writeStored(merged);
     else save(merged);
     setPhase("loading");
+  }
+
+  function back() {
+    if (index === 0) return;
+    setDir("back");
+    play("back");
+    setIndex(index - 1);
   }
 
   function answersWithChoice(): Answers {
@@ -363,6 +539,8 @@ export function OnboardingFlow({
       setError(readableAuthError(otpError.message, otpError.code));
       return;
     }
+    play("success");
+    buzz([15, 30, 15]);
     setPhase("sent");
   }
 
@@ -382,21 +560,37 @@ export function OnboardingFlow({
           return;
         }
         setPhase("paywall");
+        play("success");
+        buzz([20, 40, 30]);
         burstConfetti(80);
       }
     }, 80);
     return () => clearInterval(timer);
   }, [phase, isPro, router, mode, loadingMs]);
 
+  const loadingStep = Math.floor((progress / 100) * LOADING_STEPS.length);
+  useEffect(() => {
+    if (phase === "loading" && loadingStep > 0 && loadingStep < LOADING_STEPS.length) {
+      play("step");
+      buzz(8);
+    }
+  }, [phase, loadingStep]);
+
   const plan = useMemo(() => {
     const perWeek = minutes >= 40 ? 6 : 5;
+    const examDays = daysUntil(answers.exam_date);
     const subjects = (answers.subjects as string[] | undefined) ?? [];
     return {
       rhythm:
-        `${minutes >= 60 ? "1 h" : `${minutes} min`} par jour, ${perWeek} jours sur 7` +
+        `${fmtMinutes(minutes)} par jour, ${perWeek} jours sur 7` +
         ({ morning: ", le matin", afternoon: ", après les cours", evening: ", le soir", weekend: ", avec un peu plus le week-end" }[answers.when as string] ?? ""),
       goal: LABELS.goal?.[answers.goal as string] ?? "Progresser",
-      exam: LABELS.exam?.[answers.exam as string] ?? "",
+      exam: examDays === null ? EXAM_LABELS[answers.exam as string] ?? "" : "",
+      examDays,
+      examDate: examDays === null ? null : longDate(String(answers.exam_date)),
+      examName: String(answers.exam_name ?? "").trim(),
+      // Sessions possibles d'ici l'examen, au rythme choisi
+      sessions: examDays === null ? 0 : Math.max(1, Math.round((examDays * perWeek) / 7)),
       subjects: subjects.length ? subjects.slice(0, 4).join(", ") + (subjects.length > 4 ? "…" : "") : "Tes matières",
       method:
         answers.struggle === "forget"
@@ -408,7 +602,7 @@ export function OnboardingFlow({
             : answers.struggle === "start"
               ? "Importe ton cours : Revi le transforme en fiche, flashcards et quiz, dans le bon ordre."
               : answers.struggle === "time"
-                ? `Des sessions de ${Math.min(minutes, 20)} min pile, centrées sur ce que tu ne maîtrises pas encore.`
+                ? `Des sessions de ${fmtMinutes(Math.min(minutes, 20))} pile, centrées sur ce que tu ne maîtrises pas encore.`
                 : "Des quiz réguliers pour arriver à l'examen en confiance, sans bachotage de dernière minute.",
     };
   }, [answers, minutes]);
@@ -435,6 +629,18 @@ export function OnboardingFlow({
   const planCard = (
     <section className="card stack ob-plan">
       <h2>Ton programme Revizuno</h2>
+      {plan.examDays !== null && plan.examDate ? (
+        <div className="ob-countdown">
+          <span className="ob-countdown-big">{plan.examDays === 0 ? "Jour J" : `J-${plan.examDays}`}</span>
+          <span>
+            <strong>{plan.examName || "Ton examen"}</strong> le {plan.examDate}
+            <br />
+            <span className="muted">
+              {plan.sessions} session{plan.sessions > 1 ? "s" : ""} de {fmtMinutes(minutes)} d'ici là, au rythme que tu as choisi.
+            </span>
+          </span>
+        </div>
+      ) : null}
       <ul>
         <li>
           <span>🎯</span>
@@ -617,7 +823,11 @@ export function OnboardingFlow({
                 role="radio"
                 aria-checked={on}
                 className={`pw-plan ${on ? "on" : ""}`}
-                onClick={() => setPlanId(p.id)}
+                onClick={() => {
+                  setPlanId(p.id);
+                  play("select");
+                  buzz(8);
+                }}
               >
                 {p.recommended ? <span className="pw-badge">Offre recommandée</span> : null}
                 <span className="pw-radio" aria-hidden="true">
@@ -711,21 +921,49 @@ export function OnboardingFlow({
 
   const progressPct = Math.round((index / QUESTIONS.length) * 100);
   const value = answers[q.key];
+  const raw = name ? q.title.replace("{name}", name) : q.title.replace("{name}, ", "").replace(" {name}", "");
+  const title = raw.charAt(0).toUpperCase() + raw.slice(1);
+  const quick = [
+    { label: "Dans 1 semaine", days: 7 },
+    { label: "Dans 2 semaines", days: 14 },
+    { label: "Dans 1 mois", days: 30 },
+    { label: "Dans 3 mois", days: 90 },
+  ];
 
   return (
     <div className="ob">
       <div className="ob-top">
-        <button type="button" className="ob-back" onClick={() => setIndex((i) => Math.max(0, i - 1))} disabled={index === 0} aria-label="Question précédente">
+        <button type="button" className="ob-back" onClick={back} disabled={index === 0} aria-label="Question précédente">
           ‹
         </button>
-        <div className="progress" role="progressbar" aria-valuenow={progressPct} aria-valuemin={0} aria-valuemax={100}>
+        <div className="progress ob-progress" role="progressbar" aria-valuenow={progressPct} aria-valuemin={0} aria-valuemax={100}>
           <span style={{ width: `${Math.max(4, progressPct)}%` }} />
         </div>
+        <button
+          type="button"
+          className="ob-sound"
+          onClick={() => {
+            const off = !soundOff;
+            setMuted(off);
+            setSoundOff(off);
+            if (!off) play("select");
+          }}
+          aria-label={soundOff ? "Activer le son" : "Couper le son"}
+          aria-pressed={!soundOff}
+        >
+          {soundOff ? "🔇" : "🔊"}
+        </button>
       </div>
 
-      <div className="ob-q fade-up" key={q.key}>
+      {toast ? (
+        <div className="ob-toast" role="status">
+          {toast}
+        </div>
+      ) : null}
+
+      <div className={`ob-q ${dir === "back" ? "ob-slide-back" : "ob-slide"}`} key={q.key}>
         {q.kind === "fact" ? <span className="ob-emoji">{q.emoji}</span> : null}
-        <h1 className="ob-title">{q.title}</h1>
+        <h1 className="ob-title">{title}</h1>
         {"subtitle" in q && q.subtitle ? <p className="muted">{q.subtitle}</p> : null}
 
         {q.kind === "text" && (
@@ -743,7 +981,10 @@ export function OnboardingFlow({
               value={String(value ?? "")}
               maxLength={40}
               placeholder={q.placeholder}
-              onChange={(e) => setAnswers({ ...answers, name: e.target.value })}
+              onChange={(e) => {
+                setAnswers({ ...answers, name: e.target.value });
+                play("tap", 1 + Math.min(e.target.value.length, 12) * 0.04);
+              }}
             />
             <button type="submit" className="btn btn-primary" disabled={!String(value ?? "").trim()}>
               Continuer
@@ -753,18 +994,26 @@ export function OnboardingFlow({
 
         {q.kind === "single" && (
           <div className="ob-options stagger">
-            {q.options.map((o) => (
+            {q.options.map((o, i) => (
               <button
                 key={o.value}
                 type="button"
                 className={`ob-option ${value === o.value ? "on" : ""}`}
                 onClick={() => {
+                  // Un seul passage à la question suivante, même en cas de double clic
+                  if (advancing.current) return;
+                  advancing.current = true;
                   setAnswers({ ...answers, [q.key]: o.value });
-                  setTimeout(() => next({ [q.key]: o.value }), 220);
+                  play("select", 1 + i * 0.06);
+                  buzz(10);
+                  setTimeout(() => {
+                    advancing.current = false;
+                    next({ [q.key]: o.value });
+                  }, 320);
                 }}
               >
                 {o.emoji ? <span className="ob-opt-emoji">{o.emoji}</span> : null}
-                {o.label}
+                <span className="ob-opt-label">{o.label}</span>
               </button>
             ))}
           </div>
@@ -773,7 +1022,7 @@ export function OnboardingFlow({
         {q.kind === "multi" && (
           <>
             <div className="ob-options multi stagger">
-              {q.options.map((o) => {
+              {q.options.map((o, i) => {
                 const list = (value as string[] | undefined) ?? [];
                 const on = list.includes(o.value);
                 return (
@@ -782,10 +1031,15 @@ export function OnboardingFlow({
                     type="button"
                     className={`ob-option ${on ? "on" : ""}`}
                     aria-pressed={on}
-                    onClick={() => setAnswers({ ...answers, [q.key]: on ? list.filter((x) => x !== o.value) : [...list, o.value] })}
+                    onClick={() => {
+                      setAnswers({ ...answers, [q.key]: on ? list.filter((x) => x !== o.value) : [...list, o.value] });
+                      if (on) play("tap");
+                      else play("select", 1 + (list.length + i * 0.2) * 0.05);
+                      buzz(8);
+                    }}
                   >
                     {o.emoji ? <span className="ob-opt-emoji">{o.emoji}</span> : null}
-                    {o.label}
+                    <span className="ob-opt-label">{o.label}</span>
                   </button>
                 );
               })}
@@ -794,6 +1048,121 @@ export function OnboardingFlow({
               Continuer
             </button>
           </>
+        )}
+
+        {q.kind === "date" && (
+          <div className="ob-date stack">
+            <div className={`ob-countdown-card ${examDays !== null ? "set" : ""}`} aria-live="polite">
+              {examDays !== null ? (
+                <>
+                  <span className="ob-countdown-big">{shownDays === 0 ? "Jour J" : `J-${shownDays}`}</span>
+                  <span className="muted">{longDate(String(answers.exam_date))}</span>
+                </>
+              ) : (
+                <>
+                  <span className="ob-countdown-big muted">J-?</span>
+                  <span className="muted">Choisis une date</span>
+                </>
+              )}
+            </div>
+            <div className="ob-chips">
+              {quick.map((c) => {
+                const iso = isoDay(new Date(today().getTime() + c.days * DAY_MS));
+                return (
+                  <button
+                    key={c.label}
+                    type="button"
+                    className={`ob-chip ${answers.exam_date === iso ? "on" : ""}`}
+                    onClick={() => {
+                      setAnswers({ ...answers, exam_date: iso });
+                      play("select");
+                      buzz(8);
+                    }}
+                  >
+                    {c.label}
+                  </button>
+                );
+              })}
+            </div>
+            <label className="ob-field">
+              Date précise
+              <input
+                type="date"
+                className="ob-input"
+                min={isoDay(today())}
+                value={typeof answers.exam_date === "string" && answers.exam_date !== "none" ? answers.exam_date : ""}
+                onChange={(e) => {
+                  setAnswers({ ...answers, exam_date: e.target.value });
+                  if (e.target.value) play("select");
+                }}
+              />
+            </label>
+            <label className="ob-field">
+              Quel examen ? <span className="muted">(facultatif)</span>
+              <input
+                className="ob-input"
+                maxLength={60}
+                placeholder="Bac, partiel de bio, examen de droit…"
+                value={String(answers.exam_name ?? "")}
+                onChange={(e) => setAnswers({ ...answers, exam_name: e.target.value })}
+              />
+            </label>
+            <button
+              type="button"
+              className="btn btn-primary"
+              disabled={examDays === null}
+              onClick={() => next({ exam: examBucket(examDays) })}
+            >
+              Continuer
+            </button>
+            <button type="button" className="link-btn" onClick={() => next({ exam_date: "none", exam: "none" })}>
+              Pas d'examen prévu pour l'instant
+            </button>
+          </div>
+        )}
+
+        {q.kind === "slider" && (
+          <div className="ob-slider stack">
+            <div className="ob-slider-value" aria-live="polite">
+              <span className="ob-slider-emoji" key={minutesEmoji(minutes)}>
+                {minutesEmoji(minutes)}
+              </span>
+              <strong>{fmtMinutes(minutes)}</strong>
+              <span className="muted">par jour · environ {fmtMinutes(minutes * (minutes >= 40 ? 6 : 5))} par semaine</span>
+            </div>
+            <input
+              type="range"
+              className="ob-range"
+              min={q.min}
+              max={q.max}
+              step={q.step}
+              value={minutes}
+              style={{ "--fill": `${((minutes - q.min) / (q.max - q.min)) * 100}%` } as React.CSSProperties}
+              aria-label="Minutes de révision par jour"
+              onChange={(e) => {
+                const v = Number(e.target.value);
+                setAnswers({ ...answers, minutes: String(v) });
+                play("tick", 0.8 + (v / q.max) * 0.8);
+                buzz(4);
+              }}
+            />
+            <div className="ob-range-scale muted small">
+              <span>{q.min} min</span>
+              <span>{fmtMinutes(q.max)}</span>
+            </div>
+            <button type="button" className="btn btn-primary" onClick={() => next({ minutes: String(minutes) })}>
+              Continuer
+            </button>
+          </div>
+        )}
+
+        {q.kind === "hold" && (
+          <div className="stack" style={{ justifyItems: "center", gap: 18 }}>
+            <HoldButton onDone={() => next({ commit: "yes" })} />
+            <button type="button" className="link-btn small" onClick={() => next({ commit: "try" })}>
+              Je vais juste essayer
+            </button>
+          </div>
         )}
 
         {q.kind === "fact" && (
